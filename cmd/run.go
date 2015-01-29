@@ -1,4 +1,8 @@
-package main
+package cmd
+
+import (
+	"github.com/tbud/bud/seed"
+)
 
 var cmdRun = &Command{
 	Run:       runCommand,
@@ -27,7 +31,7 @@ func runCommand(cmd *Command, args []string) {
 		fatalf("No import path given.\nRun 'bud help run' for usage.\n")
 	}
 
-	emb := NewEmbryo()
+	emb := seed.NewEmbryo()
 
 	emb.Run()
 }

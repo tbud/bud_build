@@ -2,18 +2,16 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
-	"github.com/tbud/bud/cmd"
+	. "github.com/tbud/bud/cmd"
 	"go/build"
 	"io"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"strings"
-	"sync"
 	"text/template"
 	"unicode"
 	"unicode/utf8"
@@ -65,14 +63,14 @@ func main() {
 				args = cmd.Flag.Args()
 			}
 			cmd.Run(cmd, args)
-			exit()
+			Exit()
 			return
 		}
 	}
 
 	fmt.Fprintf(os.Stderr, "bud: unknown subcommand %q\nRun 'bud help' for usage.\n", args[0])
-	setExitStatus(2)
-	exit()
+	SetExitStatus(2)
+	Exit()
 }
 
 var usageTemplate = `Bud is a full stack develop tool for Go language.

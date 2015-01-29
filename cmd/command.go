@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"flag"
@@ -18,7 +18,7 @@ const (
 var exitStatus = 0
 var exitMu sync.Mutex
 
-func setExitStatus(n int) {
+func SetExitStatus(n int) {
 	exitMu.Lock()
 	if exitStatus < n {
 		exitStatus = n
@@ -94,7 +94,7 @@ func atexit(f func()) {
 	atexitFuncs = append(atexitFuncs, f)
 }
 
-func exit() {
+func Exit() {
 	for _, f := range atexitFuncs {
 		f()
 	}
@@ -103,18 +103,18 @@ func exit() {
 
 func fatalf(format string, args ...interface{}) {
 	errorf(format, args...)
-	exit()
+	Exit()
 }
 
 func errorf(format string, args ...interface{}) {
 	logf(format, args...)
-	setExitStatus(1)
+	SetExitStatus(1)
 }
 
-func logE(err error) {
+func LogE(err error) {
 	if err != nil {
 		log.Print(err)
-		exit()
+		Exit()
 	}
 }
 
@@ -122,7 +122,7 @@ var logf = log.Printf
 
 func exitIfErrors() {
 	if exitStatus != 0 {
-		exit()
+		Exit()
 	}
 }
 
