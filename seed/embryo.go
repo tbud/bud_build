@@ -18,7 +18,7 @@ type Embryo struct {
 
 func NewEmbryo() (embryo *Embryo) {
 	addr := "localhost"
-	port := 8888
+	port := getFreePort()
 	scheme := "http"
 
 	serverUrl, err := url.ParseRequestURI(fmt.Sprintf(scheme+"://%s:%d", addr, port))
@@ -51,7 +51,7 @@ func (e *Embryo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func getFreePort() (port int) {
-	conn, err := net.Listen("tcp", ":80")
+	conn, err := net.Listen("tcp", ":0")
 	logE(err)
 
 	port = conn.Addr().(*net.TCPAddr).Port

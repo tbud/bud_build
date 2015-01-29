@@ -2,17 +2,14 @@ package main
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
+	"github.com/tbud/bud/cmd"
 	"go/build"
 	"io"
 	"log"
 	"os"
-	// "os/exec"
-	// "path"
-	"path/filepath"
-	// "regexp"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
@@ -21,75 +18,6 @@ import (
 	"unicode"
 	"unicode/utf8"
 )
-
-const (
-	BUD_DEFAULT_SEED_PATH = "github.com/tbud/sea"
-)
-
-// A Command is an implementation of a go command
-// like go build or go fix.
-type Command struct {
-	// Run runs the command.
-	// The args are the arguments after the command name.
-	Run func(cmd *Command, args []string)
-
-	// UsageLine is the one-line usage message.
-	// The first word in the line is taken to be the command name.
-	UsageLine string
-
-	// Short is the short description shown in the 'go help' output.
-	Short string
-
-	// Long is the long message shown in the 'go help <this-command>' output.
-	Long string
-
-	// Flag is a set of flags specific to this command.
-	Flag flag.FlagSet
-
-	// CustomFlags indicates that the command will do its own
-	// flag parsing.
-	CustomFlags bool
-}
-
-// Name returns the command's name: the first word in the usage line.
-func (c *Command) Name() string {
-	name := c.UsageLine
-	i := strings.Index(name, " ")
-	if i >= 0 {
-		name = name[:i]
-	}
-	return name
-}
-
-func (c *Command) Usage() {
-	fmt.Fprintf(os.Stderr, "usage: %s\n\n", c.UsageLine)
-	fmt.Fprintf(os.Stderr, "%s\n", strings.TrimSpace(c.Long))
-	os.Exit(2)
-}
-
-// Runnable reports whether the command can be run; otherwise
-// it is a documentation pseudo-command such as importpath.
-func (c *Command) Runnable() bool {
-	return c.Run != nil
-}
-
-// Commands lists the available commands and help topics.
-// The order here is the order in which they are printed by 'go help'.
-var commands = []*Command{
-	cmdNew,
-	cmdRun,
-}
-
-var exitStatus = 0
-var exitMu sync.Mutex
-
-func setExitStatus(n int) {
-	exitMu.Lock()
-	if exitStatus < n {
-		exitStatus = n
-	}
-	exitMu.Unlock()
-}
 
 func main() {
 	flag.Usage = usage
@@ -127,7 +55,7 @@ func main() {
 		}
 	}
 
-	for _, cmd := range commands {
+	for _, cmd := range Commands {
 		if cmd.Name() == args[0] && cmd.Run != nil {
 			cmd.Flag.Usage = func() { cmd.Usage() }
 			if cmd.CustomFlags {
@@ -212,7 +140,7 @@ func capitalize(s string) string {
 }
 
 func printUsage(w io.Writer) {
-	tmpl(w, usageTemplate, commands)
+	tmpl(w, usageTemplate, Commands)
 }
 
 func usage() {
@@ -244,11 +172,11 @@ func help(args []string) {
 		buf := new(bytes.Buffer)
 		printUsage(buf)
 		usage := &Command{Long: buf.String()}
-		tmpl(os.Stdout, documentationTemplate, append([]*Command{usage}, commands...))
+		tmpl(os.Stdout, documentationTemplate, append([]*Command{usage}, Commands...))
 		return
 	}
 
-	for _, cmd := range commands {
+	for _, cmd := range Commands {
 		if cmd.Name() == arg {
 			tmpl(os.Stdout, helpTemplate, cmd)
 			// not exit 2: succeeded at 'bud help cmd'.
@@ -258,99 +186,4 @@ func help(args []string) {
 
 	fmt.Fprintf(os.Stderr, "Unknown help topic %#q.  Run 'bud help'.\n", arg)
 	os.Exit(2) // failed at 'bud help cmd'
-}
-
-var atexitFuncs []func()
-
-func atexit(f func()) {
-	atexitFuncs = append(atexitFuncs, f)
-}
-
-func exit() {
-	for _, f := range atexitFuncs {
-		f()
-	}
-	os.Exit(exitStatus)
-}
-
-func fatalf(format string, args ...interface{}) {
-	errorf(format, args...)
-	exit()
-}
-
-func errorf(format string, args ...interface{}) {
-	logf(format, args...)
-	setExitStatus(1)
-}
-
-func logE(err error) {
-	if err != nil {
-		log.Print(err)
-		exit()
-	}
-}
-
-var logf = log.Printf
-
-func exitIfErrors() {
-	if exitStatus != 0 {
-		exit()
-	}
-}
-
-func run(cmdargs ...interface{}) {
-	cmdline := stringList(cmdargs...)
-	cmd := exec.Command(cmdline[0], cmdline[1:]...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		errorf("%v", err)
-	}
-}
-
-func runOut(dir string, cmdargs ...interface{}) []byte {
-	cmdline := stringList(cmdargs...)
-	cmd := exec.Command(cmdline[0], cmdline[1:]...)
-	cmd.Dir = dir
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		os.Stderr.Write(out)
-		errorf("%v", err)
-		out = nil
-	}
-	return out
-}
-
-// matchPattern(pattern)(name) reports whether
-// name matches pattern.  Pattern is a limited glob
-// pattern in which '...' means 'any string' and there
-// is no other special syntax.
-func matchPattern(pattern string) func(name string) bool {
-	re := regexp.QuoteMeta(pattern)
-	re = strings.Replace(re, `\.\.\.`, `.*`, -1)
-	// Special case: foo/... matches foo too.
-	if strings.HasSuffix(re, `/.*`) {
-		re = re[:len(re)-len(`/.*`)] + `(/.*)?`
-	}
-	reg := regexp.MustCompile(`^` + re + `$`)
-	return func(name string) bool {
-		return reg.MatchString(name)
-	}
-}
-
-// stringList's arguments should be a sequence of string or []string values.
-// stringList flattens them into a single []string.
-func stringList(args ...interface{}) []string {
-	var x []string
-	for _, arg := range args {
-		switch arg := arg.(type) {
-		case []string:
-			x = append(x, arg...)
-		case string:
-			x = append(x, arg)
-		default:
-			panic("stringList: invalid argument")
-		}
-	}
-	return x
 }
