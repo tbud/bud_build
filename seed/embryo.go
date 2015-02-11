@@ -2,7 +2,7 @@ package seed
 
 import (
 	"fmt"
-	"github.com/tbud/x"
+	. "github.com/tbud/bud/common"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -23,7 +23,7 @@ func NewEmbryo() (embryo *Embryo) {
 	scheme := "http"
 
 	serverUrl, err := url.ParseRequestURI(fmt.Sprintf(scheme+"://%s:%d", addr, port))
-	x.ErrLog.EFatal(err)
+	ExitIfError(err)
 
 	embryo = &Embryo{
 		serverHost: serverUrl.String()[len(scheme+"://"):],
@@ -37,7 +37,7 @@ func NewEmbryo() (embryo *Embryo) {
 func (e *Embryo) Run() {
 	go func() {
 		err := http.ListenAndServe(e.serverHost, e)
-		x.ErrLog.EFatal(err)
+		ExitIfError(err)
 	}()
 
 	ch := make(chan os.Signal)
@@ -53,9 +53,9 @@ func (e *Embryo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func getFreePort() (port int) {
 	conn, err := net.Listen("tcp", ":0")
-	x.ErrLog.EFatal(err)
+	ExitIfError(err)
 
 	port = conn.Addr().(*net.TCPAddr).Port
-	x.ErrLog.EFatal(conn.Close())
+	ExitIfError(conn.Close())
 	return
 }

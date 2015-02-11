@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	. "github.com/tbud/bud/common"
 	"github.com/tbud/bud/seed"
 )
 
@@ -28,7 +29,7 @@ You can set a port as an optional third parameter.  For example:
 
 func runCommand(cmd *Command, args []string) {
 	if len(args) == 0 {
-		fatalf("No import path given.\nRun 'bud help run' for usage.\n")
+		LogFatalExit("No import path given.\nRun 'bud help run' for usage.\n")
 	}
 
 	emb := seed.NewEmbryo()

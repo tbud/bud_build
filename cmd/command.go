@@ -3,28 +3,16 @@ package cmd
 import (
 	"flag"
 	"fmt"
-	"log"
+	. "github.com/tbud/bud/common"
 	"os"
 	"os/exec"
 	"regexp"
 	"strings"
-	"sync"
 )
 
 const (
 	BUD_DEFAULT_SEED_PATH = "github.com/tbud/sea"
 )
-
-var exitStatus = 0
-var exitMu sync.Mutex
-
-func SetExitStatus(n int) {
-	exitMu.Lock()
-	if exitStatus < n {
-		exitStatus = n
-	}
-	exitMu.Unlock()
-}
 
 // Commands lists the available commands and help topics.
 // The order here is the order in which they are printed by 'go help'.
@@ -88,51 +76,13 @@ func panicOnError(err error, msg string, args ...interface{}) {
 	}
 }
 
-var atexitFuncs []func()
-
-func atexit(f func()) {
-	atexitFuncs = append(atexitFuncs, f)
-}
-
-func Exit() {
-	for _, f := range atexitFuncs {
-		f()
-	}
-	os.Exit(exitStatus)
-}
-
-func fatalf(format string, args ...interface{}) {
-	errorf(format, args...)
-	Exit()
-}
-
-func errorf(format string, args ...interface{}) {
-	logf(format, args...)
-	SetExitStatus(1)
-}
-
-func LogE(err error) {
-	if err != nil {
-		log.Print(err)
-		Exit()
-	}
-}
-
-var logf = log.Printf
-
-func exitIfErrors() {
-	if exitStatus != 0 {
-		Exit()
-	}
-}
-
 func run(cmdargs ...interface{}) {
 	cmdline := stringList(cmdargs...)
 	cmd := exec.Command(cmdline[0], cmdline[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		errorf("%v", err)
+		Log.Error("%v", err)
 	}
 }
 
@@ -143,7 +93,7 @@ func runOut(dir string, cmdargs ...interface{}) []byte {
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		os.Stderr.Write(out)
-		errorf("%v", err)
+		Log.Error("%v", err)
 		out = nil
 	}
 	return out

@@ -5,9 +5,9 @@ import (
 	"flag"
 	"fmt"
 	. "github.com/tbud/bud/cmd"
+	. "github.com/tbud/bud/common"
 	"go/build"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -20,7 +20,6 @@ import (
 func main() {
 	flag.Usage = usage
 	flag.Parse()
-	log.SetFlags(0)
 
 	args := flag.Args()
 	if len(args) < 1 {

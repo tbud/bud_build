@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	. "github.com/tbud/bud/common"
 	"go/build"
 	"io"
 	"math/rand"
@@ -33,7 +34,7 @@ For example:
     `,
 }
 
-var seedName = cmdNew.Flag.String("s", "react", "")
+var seedName = cmdNew.Flag.String("s", "tea", "")
 
 var (
 	srcRoot    string
@@ -50,7 +51,7 @@ func init() {
 
 func newCommand(cmd *Command, args []string) {
 	if len(args) != 1 {
-		fatalf("Command error. Run 'bud help new' for usage.\n")
+		LogFatalExit("Command error. Run 'bud help new' for usage.\n")
 	}
 
 	checkGoPaths()
@@ -61,8 +62,8 @@ func newCommand(cmd *Command, args []string) {
 	// checking and copy from seed
 	copyFromSeed()
 
-	logf("Your application is ready:\n  %s", appPath)
-	logf("\nYou can run it with:\n  bud run %s", importPath)
+	Log.Info("Your application is ready:\n  %s", appPath)
+	Log.Info("\nYou can run it with:\n  bud run %s", importPath)
 }
 
 const alphaNumeric = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
@@ -81,7 +82,7 @@ func checkGoPaths() {
 	// lookup go path
 	gopath := build.Default.GOPATH
 	if gopath == "" {
-		fatalf("Abort: GOPATH environment variable is not set. " +
+		LogFatalExit("Abort: GOPATH environment variable is not set. " +
 			"Please refer to http://golang.org/doc/code.html to configure your Go environment.")
 	}
 
@@ -93,13 +94,13 @@ func parseParams(args []string) {
 	var err error
 	importPath = args[0]
 	if filepath.IsAbs(importPath) {
-		fatalf("Abort: '%s' looks like a directory.  Please provide a Go import path instead.",
+		LogFatalExit("Abort: '%s' looks like a directory.  Please provide a Go import path instead.",
 			importPath)
 	}
 
 	_, err = build.Import(importPath, "", build.FindOnly)
 	if err == nil {
-		fatalf("Abort: Import path %s already exists.\n", importPath)
+		LogFatalExit("Abort: Import path %s already exists.\n", importPath)
 	}
 
 	appPath = filepath.Join(srcRoot, filepath.FromSlash(importPath))
@@ -143,18 +144,18 @@ func copyFromSeed() {
 func checkAndGetImport(path string) {
 	gocmd, err := exec.LookPath("go")
 	if err != nil {
-		fatalf("Go executable not found in PATH.")
+		LogFatalExit("Go executable not found in PATH.")
 	}
 
 	_, err = build.Import(path, "", build.FindOnly)
 	if err != nil {
 		getCmd := exec.Command(gocmd, "get", "-d", path)
-		logf("Exec: %s", getCmd.Args)
+		Log.Info("Exec: %s", getCmd.Args)
 		bOutput, err := getCmd.CombinedOutput()
 
 		bpos := bytes.Index(bOutput, []byte("no buildable Go source files in"))
 		if err != nil && bpos == -1 {
-			fatalf("Abort: Could not find or 'go get' path '%s'.\nOutput: %s", path, bOutput)
+			LogFatalExit("Abort: Could not find or 'go get' path '%s'.\nOutput: %s", path, bOutput)
 		}
 	}
 }
@@ -174,7 +175,7 @@ func copySeedArchetype(destDir, srcDir string, data map[string]interface{}) erro
 	archetypeDir := filepath.Join(originSrcDir, "archetype")
 	if _, err := os.Stat(archetypeDir); err != nil {
 		if os.IsNotExist(err) {
-			fatalf("Seed archetype not exist: %s", archetypeDir)
+			LogFatalExit("Seed archetype not exist: %s", archetypeDir)
 		}
 	}
 
