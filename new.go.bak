@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"bytes"
@@ -15,7 +15,7 @@ import (
 )
 
 var cmdNew = &Command{
-	UsageLine: "new [-s] [path]",
+	UsageLine: "new [path]",
 	Short:     "create a bud application from seed",
 	Long: `
 New creates a few files to get a new bud application running quickly.
@@ -25,12 +25,6 @@ the path to be the app name.
 
 The -s flag is an optional argument, provided the ability to create from a special seed.
 The default seed is react.
-
-For example:
-
-    bud new import/path/appname
-
-    bud new -s react import/path/appname
     `,
 }
 
