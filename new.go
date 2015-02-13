@@ -48,3 +48,5 @@ func newCommand(cmd *Command, args []string) {
 	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 
 }
+
+func newBud()
