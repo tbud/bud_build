@@ -1,0 +1,25 @@
+package main
+
+import (
+	. "fmt"
+	. "os"
+	. "strings"
+	. "math"
+	. "strconv"
+	. "time"
+)
+
+func init() {
+	//Args = Args[1:]
+	_ = Printf
+	_ = Exit
+	_ = Contains
+	_ = Abs
+	_ = Atoi
+	_ = Sleep
+	//_ = Exec
+}
+
+func main() {
+	Println("hello world")
+}
