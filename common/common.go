@@ -30,13 +30,6 @@ func Exit() {
 	os.Exit(exitStatus)
 }
 
-func ExitIfError(err error) {
-	if err != nil {
-		Log.Error(err.Error())
-		os.Exit(1)
-	}
-}
-
 func PanicIfError(err error) {
 	if err != nil {
 		Log.Error(err.Error())

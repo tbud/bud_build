@@ -31,10 +31,10 @@ type Command struct {
 	// The first word in the line is taken to be the command name.
 	UsageLine string
 
-	// Short is the short description shown in the 'go help' output.
+	// Short is the short description shown in the 'bud help' output.
 	Short string
 
-	// Long is the long message shown in the 'go help <this-command>' output.
+	// Long is the long message shown in the 'bud help <this-command>' output.
 	Long string
 
 	// Flag is a set of flags specific to this command.

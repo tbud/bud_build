@@ -1,4 +1,4 @@
-package common
+package context
 
 import (
 	"github.com/tbud/x/config"
@@ -11,13 +11,17 @@ var (
 	Log    *log.Logger
 )
 
+type Context struct{}
+
 func init() {
 	var err error
-	if _, err = os.Stat(".bud"); err == nil {
-		Config, err = config.Load(".bud")
-		ExitIfError(err)
-	}
-
-	Log, err = log.New(Config.SubConfig("logger"))
+	Log, err = log.New(nil)
 	ExitIfError(err)
+}
+
+func ExitIfError(err error) {
+	if err != nil {
+		Log.Error(err.Error())
+		os.Exit(1)
+	}
 }

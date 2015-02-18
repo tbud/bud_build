@@ -9,8 +9,6 @@ type Plugin interface {
 	Validate() error
 }
 
-var _plugins = []
-
 func AddBudPlugin(plugImport string, config config.Config) error {
-	
+	return nil
 }

@@ -6,7 +6,7 @@ import (
 	. "strings"
 	. "math"
 	. "strconv"
-	. "time"
+	. "github.com/tbud/x/Config"
 )
 
 func init() {
@@ -16,7 +16,6 @@ func init() {
 	_ = Contains
 	_ = Abs
 	_ = Atoi
-	_ = Sleep
 	//_ = Exec
 }
 
