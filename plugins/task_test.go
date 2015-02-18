@@ -29,5 +29,8 @@ func TestTask(t *testing.T) {
 	})
 
 	// RunTask("A")
-	RunTask("B")
+	err := RunTask("B")
+	if err != nil {
+		t.Error(err)
+	}
 }

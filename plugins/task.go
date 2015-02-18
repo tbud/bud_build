@@ -2,6 +2,7 @@ package plugins
 
 import (
 	"errors"
+	"fmt"
 	"github.com/tbud/bud/context"
 )
 
@@ -16,6 +17,26 @@ type Depends []string
 var _tasks = map[string]task{}
 
 var _runningTask = []string{}
+
+func pushTask(taskName string) error {
+	if len(_runningTask) == 0 {
+		_runningTask = append(_runningTask, taskName)
+	} else {
+		for _, t := range _runningTask {
+			if t == taskName {
+				return errors.New(fmt.Sprintf("Already run task: %s, there is a recursion call. Call sequence:%v", t, _runningTask))
+			}
+		}
+		_runningTask = append(_runningTask, taskName)
+	}
+	return nil
+}
+
+func popTask() {
+	if len(_runningTask) > 0 {
+		_runningTask = _runningTask[:len(_runningTask)-1]
+	}
+}
 
 func Task(taskName string, args ...interface{}) {
 	if len(taskName) > 0 {
@@ -50,6 +71,12 @@ func Depend(tasks ...string) Depends {
 }
 
 func RunTask(taskName string, args ...string) error {
+	err := pushTask(taskName)
+	if err != nil {
+		return err
+	}
+	defer popTask()
+
 	if len(taskName) > 0 {
 		if task, exist := _tasks[taskName]; exist {
 			if len(task.depends) > 0 {
