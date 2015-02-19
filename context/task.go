@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/tbud/x/config"
 	"path/filepath"
-	// "reflect"
+	"reflect"
 	"runtime"
 	"strings"
 )
@@ -134,11 +134,29 @@ func RunTask(taskName string) error {
 
 func configTask(taskName string) error {
 	return walkTask(taskName, func(t *task) error {
-		if t.config != nil && t.executor != nil {
-			return nil
+		if t.executor != nil {
+			conf := Config.SubConfig("tasks").SubConfig(t.packageName)
+			return configExecutor(t.executor, conf, t.config)
 		}
 		return nil
 	})
+}
+
+func configExecutor(executor Executor, contextConf config.Config, conf config.Config) error {
+	ev := reflect.ValueOf(executor)
+	if ev.Kind() == reflect.Ptr {
+		ev = ev.Elem()
+	}
+
+	for i := 0; i < ev.NumField(); i++ {
+		efv := ev.Field(i)
+		name := 
+		switch sf.Type.Kind() {
+
+		}
+	}
+
+	return nil
 }
 
 func checkTaskValidate(taskName string) error {

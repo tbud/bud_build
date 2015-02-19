@@ -11,8 +11,6 @@ var (
 	Log    *log.Logger
 )
 
-type Context struct{}
-
 func init() {
 	var err error
 	Log, err = log.New(nil)
