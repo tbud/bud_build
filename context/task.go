@@ -1,9 +1,11 @@
-package plugins
+package context
 
 import (
 	"errors"
 	"fmt"
+	"github.com/tbud/bud/plugins"
 	"path/filepath"
+	// "reflect"
 	"runtime"
 	"strconv"
 	"strings"
@@ -14,7 +16,7 @@ type task struct {
 	packageName string
 	depends     []string
 	usageLine   string
-	runner      func() error
+	plugin      plugins.Plugin
 }
 
 type Depends []string
@@ -67,7 +69,7 @@ func Task(name string, args ...interface{}) {
 		for i, arg := range args {
 			switch value := arg.(type) {
 			default:
-				panic("unknown args on " + strconv.Itoa(i))
+				panic("unknown args on " + strconv.Itoa(i+1))
 			case Depends:
 				t.depends = []string(value)
 			case []string:
@@ -77,7 +79,10 @@ func Task(name string, args ...interface{}) {
 			case PackageName:
 				t.packageName = string(value)
 			case func() error:
-				t.runner = value
+				t.plugin = &defaultPlugin{runner: value}
+			case plugins.Plugin:
+				t.plugin = value
+				// fmt.Println(reflect.TypeOf(value))
 			}
 		}
 
@@ -125,8 +130,8 @@ func RunTask(taskName string, args ...string) error {
 				}
 			}
 
-			if task.runner != nil {
-				return task.runner()
+			if task.plugin != nil {
+				return task.plugin.Execute()
 			}
 
 			return nil
