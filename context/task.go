@@ -1,13 +1,11 @@
 package context
 
 import (
-	"errors"
 	"fmt"
-	"github.com/tbud/bud/plugins"
+	"github.com/tbud/x/config"
 	"path/filepath"
 	// "reflect"
 	"runtime"
-	"strconv"
 	"strings"
 )
 
@@ -15,8 +13,9 @@ type task struct {
 	name        string
 	packageName string
 	depends     []string
+	executor    Executor
+	config      config.Config
 	usageLine   string
-	plugin      plugins.Plugin
 }
 
 type Depends []string
@@ -35,7 +34,7 @@ func Package(name string) PackageName {
 	return PackageName(name)
 }
 
-var _tasks = map[string]task{}
+var _tasks = map[string]*task{}
 
 var _runningTask = []string{}
 
@@ -45,7 +44,7 @@ func pushTask(taskName string) error {
 	} else {
 		for _, t := range _runningTask {
 			if t == taskName {
-				return errors.New(fmt.Sprintf("Already run task: %s, there is a recursion call. Call sequence:%v", t, _runningTask))
+				return fmt.Errorf("Already run task: %s, there is a recursion call. Call sequence:%v", t, _runningTask)
 			}
 		}
 		_runningTask = append(_runningTask, taskName)
@@ -59,30 +58,38 @@ func popTask() {
 	}
 }
 
+func ifPanic(bPanic bool, err error) {
+	if bPanic {
+		panic(err)
+	}
+}
+
 func Task(name string, args ...interface{}) {
 	if len(name) > 0 {
 		if len(args) == 0 {
-			panic("task must have dependence or run function")
+			panic("task must have dependence or executor function")
 		}
 
 		t := task{name: name}
 		for i, arg := range args {
 			switch value := arg.(type) {
 			default:
-				panic("unknown args on " + strconv.Itoa(i+1))
+				panic(fmt.Errorf("unknown args at arg[%d].", i+1))
 			case Depends:
 				t.depends = []string(value)
-			case []string:
-				t.depends = value
 			case UsageLine:
 				t.usageLine = string(value)
 			case PackageName:
 				t.packageName = string(value)
 			case func() error:
-				t.plugin = &defaultPlugin{runner: value}
-			case plugins.Plugin:
-				t.plugin = value
-				// fmt.Println(reflect.TypeOf(value))
+				ifPanic(t.executor != nil, fmt.Errorf("there is more than one executor in arg[%d].", i+1))
+				t.executor = &defaultExecutor{runner: value}
+			case Executor:
+				ifPanic(t.executor != nil, fmt.Errorf("there is more than one executor in arg[%d].", i+1))
+				t.executor = value
+			case config.Config:
+				ifPanic(t.config != nil, fmt.Errorf("there is more than one config in arg[%d].", i+1))
+				t.config = value
 			}
 		}
 
@@ -95,7 +102,7 @@ func Task(name string, args ...interface{}) {
 			panic("task name exist: " + taskName)
 		}
 
-		_tasks[taskName] = t
+		_tasks[taskName] = &t
 	} else {
 		panic("task name is empty")
 	}
@@ -112,37 +119,67 @@ func getTaskDefaultPackageName() string {
 	return baseDir
 }
 
-func RunTask(taskName string, args ...string) error {
+func RunTask(taskName string) error {
 	if len(taskName) > 0 {
-		err := pushTask(taskName)
+		err := checkTaskValidate(taskName)
 		if err != nil {
 			return err
 		}
-		defer popTask()
 
-		if task, exist := _tasks[taskName]; exist {
-			if len(task.depends) > 0 {
-				for _, depTask := range task.depends {
-					err := RunTask(depTask, args...)
-					if err != nil {
-						return err
-					}
+		return executeTask(taskName)
+	} else {
+		return fmt.Errorf("task name is empty")
+	}
+}
+
+func configTask(taskName string) error {
+	return walkTask(taskName, func(t *task) error {
+		if t.config != nil && t.executor != nil {
+			return nil
+		}
+		return nil
+	})
+}
+
+func checkTaskValidate(taskName string) error {
+	return walkTask(taskName, func(t *task) error {
+		if t.executor != nil {
+			return t.executor.Validate()
+		}
+		return nil
+	})
+}
+
+func executeTask(taskName string) error {
+	return walkTask(taskName, func(t *task) error {
+		if t.executor != nil {
+			return t.executor.Execute()
+		}
+		return nil
+	})
+}
+
+func walkTask(taskName string, doTask func(t *task) error) error {
+	err := pushTask(taskName)
+	if err != nil {
+		return err
+	}
+	defer popTask()
+
+	if task, exist := _tasks[taskName]; exist {
+		if len(task.depends) > 0 {
+			for _, depTask := range task.depends {
+				err := walkTask(depTask, doTask)
+				if err != nil {
+					return err
 				}
 			}
-
-			if task.plugin != nil {
-				return task.plugin.Execute()
-			}
-
-			return nil
-		} else {
-			panic("no task : " + taskName)
 		}
-	} else {
-		panic("task name is empty")
-	}
 
-	return errors.New("Run task not reach here!")
+		return doTask(task)
+	} else {
+		return fmt.Errorf("Could not find task: %s", taskName)
+	}
 }
 
 func TaskPackageToDefault(packageNames ...string) {

@@ -16,7 +16,6 @@ func init() {
 	_ = Contains
 	_ = Abs
 	_ = Atoi
-	//_ = Exec
 }
 
 func main() {

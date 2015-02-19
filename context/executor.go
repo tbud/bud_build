@@ -4,18 +4,23 @@ import (
 	"errors"
 )
 
-type defaultPlugin struct {
+type Executor interface {
+	Execute() error
+	Validate() error
+}
+
+type defaultExecutor struct {
 	runner func() error
 }
 
-func (d *defaultPlugin) Execute() error {
+func (d *defaultExecutor) Execute() error {
 	if d != nil && d.runner != nil {
 		return d.runner()
 	}
 	return nil
 }
 
-func (d *defaultPlugin) Validate() error {
+func (d *defaultExecutor) Validate() error {
 	if d == nil || d.runner == nil {
 		return errors.New("Current object or runner is nil")
 	}
