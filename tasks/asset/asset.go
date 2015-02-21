@@ -29,6 +29,7 @@ type AssetTask struct {
 	Excludes []string
 	Output   string
 	Compress bool
+	Num      int
 }
 
 func init() {
@@ -54,6 +55,7 @@ func (a *AssetTask) Execute() error {
 		return err
 	}
 
+	fmt.Println(a)
 	return nil
 }
 
@@ -62,9 +64,14 @@ func (a *AssetTask) Validate() error {
 		return fmt.Errorf("Missing package name")
 	}
 
+	var err error
 	if !filepath.IsAbs(a.BaseDir) {
-		a.BaseDir = filepath.Abs(a.BaseDir)
+		a.BaseDir, err = filepath.Abs(a.BaseDir)
+		if err != nil {
+			return err
+		}
 	}
+
 	if _, err := os.Stat(a.BaseDir); os.IsNotExist(err) {
 		return fmt.Errorf("Base dir : '%s' not exist", a.BaseDir)
 	}

@@ -2,9 +2,30 @@ package context
 
 import (
 	"fmt"
+	"github.com/tbud/x/config"
 	"reflect"
 	"testing"
 )
+
+type testTask struct {
+	Package  string
+	BaseDir  string
+	Includes []string
+	Excludes []string
+	Output   string
+	Compress bool
+	Num      int
+}
+
+func (t *testTask) Execute() error {
+	fmt.Println(t)
+	return nil
+}
+
+func (t *testTask) Validate() error {
+	fmt.Println("test task validate")
+	return nil
+}
 
 func init() {
 	Task("A1", func() error {
@@ -16,6 +37,21 @@ func init() {
 	})
 
 	TaskPackageToDefault()
+}
+
+func TestTestTask(t *testing.T) {
+	Task("test", &testTask{}, config.Config{
+		"package":  "pkg",
+		"baseDir":  "bb",
+		"compress": true,
+		"num":      3,
+		"test":     1,
+		"includes": []string{"resource/**/*.go", "temp/**/*.tmpl"},
+		"excludes": []string{"1", "2", "3"},
+	})
+	TaskPackageToDefault()
+
+	RunTask("test")
 }
 
 func BenchmarkTaskRun(b *testing.B) {

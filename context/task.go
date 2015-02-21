@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"unicode"
 )
 
 type task struct {
@@ -121,7 +122,12 @@ func getTaskDefaultPackageName() string {
 
 func RunTask(taskName string) error {
 	if len(taskName) > 0 {
-		err := checkTaskValidate(taskName)
+		err := configTask(taskName)
+		if err != nil {
+			return err
+		}
+
+		err = checkTaskValidate(taskName)
 		if err != nil {
 			return err
 		}
@@ -135,28 +141,64 @@ func RunTask(taskName string) error {
 func configTask(taskName string) error {
 	return walkTask(taskName, func(t *task) error {
 		if t.executor != nil {
-			conf := Config.SubConfig("tasks").SubConfig(t.packageName)
-			return configExecutor(t.executor, conf, t.config)
+			conf := contextConfig.SubConfig(CONTEXT_CONFIG_TASK_KEY).SubConfig(t.packageName)
+			if conf != nil {
+				err := configExecutor(t.executor, conf)
+				if err != nil {
+					return err
+				}
+			}
+
+			if t.config != nil {
+				return configExecutor(t.executor, t.config)
+			}
 		}
 		return nil
 	})
 }
 
-func configExecutor(executor Executor, contextConf config.Config, conf config.Config) error {
+func firstRuneToUpper(key string) string {
+	rkey := []rune(key)
+	rkey[0] = unicode.ToUpper(rkey[0])
+	return string(rkey)
+}
+
+func configExecutor(executor Executor, conf config.Config) error {
 	ev := reflect.ValueOf(executor)
 	if ev.Kind() == reflect.Ptr {
 		ev = ev.Elem()
 	}
 
-	for i := 0; i < ev.NumField(); i++ {
-		efv := ev.Field(i)
-		name := 
-		switch sf.Type.Kind() {
-
+	return conf.EachKey(func(key string) error {
+		value := ev.FieldByName(firstRuneToUpper(key))
+		if value.IsValid() {
+			switch value.Kind() {
+			case reflect.Slice:
+				if value.Type() == reflect.TypeOf([]string{}) {
+					if ssv, ok := conf.Strings(key); ok {
+						value.Set(reflect.ValueOf(ssv))
+					}
+				}
+			case reflect.Bool:
+				if bv, ok := conf.Bool(key); ok {
+					value.SetBool(bv)
+				}
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+				if iv, ok := conf.Int(key); ok {
+					value.SetInt(int64(iv))
+				}
+			case reflect.String:
+				if sv, ok := conf.String(key); ok {
+					value.SetString(sv)
+				}
+			case reflect.Float32, reflect.Float64:
+				if fv, ok := conf.Float(key); ok {
+					value.SetFloat(fv)
+				}
+			}
 		}
-	}
-
-	return nil
+		return nil
+	})
 }
 
 func checkTaskValidate(taskName string) error {

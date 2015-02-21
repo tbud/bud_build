@@ -8,7 +8,7 @@ import (
 func TestAsset(t *testing.T) {
 	TaskPackageToDefault()
 
-	err := RunTask("asset")
+	err := RunTask("tobin")
 	if err != nil {
 		t.Error(err)
 	}
