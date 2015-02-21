@@ -234,7 +234,7 @@ func walkTask(taskName string, doTask func(t *task) error) error {
 	}
 }
 
-func TaskPackageToDefault(packageNames ...string) {
+func UseTasks(packageNames ...string) {
 	if len(packageNames) == 0 {
 		setTaskToDefault(getTaskDefaultPackageName())
 	} else {

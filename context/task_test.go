@@ -41,7 +41,7 @@ func init() {
 		return nil
 	})
 
-	TaskPackageToDefault()
+	UseTasks()
 }
 
 func TestTestTask(t *testing.T) {
@@ -66,7 +66,7 @@ func TestTestTask(t *testing.T) {
 		"num":      3,
 		"includes": []string{"resource/**/*.go", "temp/**/*.tmpl"},
 	})
-	TaskPackageToDefault()
+	UseTasks()
 
 	RunTask("test")
 }
@@ -96,7 +96,7 @@ func TestTask(t *testing.T) {
 		return nil
 	})
 
-	TaskPackageToDefault()
+	UseTasks()
 
 	err := RunTask("B")
 	if err != nil {
