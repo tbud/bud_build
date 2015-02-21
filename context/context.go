@@ -29,7 +29,13 @@ func init() {
 	if _, ferr := os.Stat(budConf); !os.IsNotExist(ferr) {
 		contextConfig, err = config.Load(budConf)
 		ExitIfError(err)
+	} else {
+		contextConfig = config.Config{}
 	}
+}
+
+func ContextConfig(conf config.Config) error {
+	return contextConfig.Merge("", conf)
 }
 
 func ExitIfError(err error) {

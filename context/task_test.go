@@ -2,7 +2,7 @@ package context
 
 import (
 	"fmt"
-	"github.com/tbud/x/config"
+	. "github.com/tbud/x/config"
 	"reflect"
 	"testing"
 )
@@ -15,6 +15,7 @@ type testTask struct {
 	Output   string
 	Compress bool
 	Num      int
+	Float1   float64
 }
 
 func (t *testTask) Execute() error {
@@ -23,7 +24,11 @@ func (t *testTask) Execute() error {
 }
 
 func (t *testTask) Validate() error {
-	fmt.Println("test task validate")
+	if t.Num != 3 || t.Package != "pkg" || t.BaseDir != "bb" || t.Float1 != 1.18 ||
+		!reflect.DeepEqual(t.Excludes, []string{"1", "2", "3"}) ||
+		!reflect.DeepEqual(t.Includes, []string{"resource/**/*.go", "temp/**/*.tmpl"}) {
+		return fmt.Errorf("there are task config set error")
+	}
 	return nil
 }
 
@@ -40,14 +45,26 @@ func init() {
 }
 
 func TestTestTask(t *testing.T) {
-	Task("test", &testTask{}, config.Config{
-		"package":  "pkg",
+	ContextConfig(Config{
+		CONTEXT_CONFIG_TASK_KEY: Config{
+			"context": Config{
+				"test": Config{
+					"package":  "pkg",
+					"num":      4,
+					"test":     1,
+					"float1":   1.18,
+					"includes": []string{"resource/**/*.go"},
+					"excludes": []string{"1", "2", "3"},
+				},
+			},
+		},
+	})
+
+	Task("test", &testTask{}, Config{
 		"baseDir":  "bb",
 		"compress": true,
 		"num":      3,
-		"test":     1,
 		"includes": []string{"resource/**/*.go", "temp/**/*.tmpl"},
-		"excludes": []string{"1", "2", "3"},
 	})
 	TaskPackageToDefault()
 
@@ -85,4 +102,13 @@ func TestTask(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+}
+
+func TestFullTask(t *testing.T) {
+	Task("f1", Package("py"), Usage("for test"), func() error {
+		fmt.Println("in f1")
+		return nil
+	})
+
+	RunTask("py.f1")
 }

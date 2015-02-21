@@ -20,19 +20,11 @@ type task struct {
 }
 
 type Depends []string
-type UsageLine string
-type PackageName string
+type Usage string
+type Package string
 
 func Depend(tasks ...string) Depends {
 	return Depends(tasks)
-}
-
-func Usage(line string) UsageLine {
-	return UsageLine(line)
-}
-
-func Package(name string) PackageName {
-	return PackageName(name)
 }
 
 var _tasks = map[string]*task{}
@@ -78,9 +70,9 @@ func Task(name string, args ...interface{}) {
 				panic(fmt.Errorf("unknown args at arg[%d].", i+1))
 			case Depends:
 				t.depends = []string(value)
-			case UsageLine:
+			case Usage:
 				t.usageLine = string(value)
-			case PackageName:
+			case Package:
 				t.packageName = string(value)
 			case func() error:
 				ifPanic(t.executor != nil, fmt.Errorf("there is more than one executor in arg[%d].", i+1))
@@ -141,7 +133,7 @@ func RunTask(taskName string) error {
 func configTask(taskName string) error {
 	return walkTask(taskName, func(t *task) error {
 		if t.executor != nil {
-			conf := contextConfig.SubConfig(CONTEXT_CONFIG_TASK_KEY).SubConfig(t.packageName)
+			conf := contextConfig.SubConfig(CONTEXT_CONFIG_TASK_KEY).SubConfig(t.packageName).SubConfig(t.name)
 			if conf != nil {
 				err := configExecutor(t.executor, conf)
 				if err != nil {
