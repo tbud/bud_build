@@ -1,6 +1,7 @@
 package context
 
 import (
+	"fmt"
 	"github.com/tbud/x/config"
 	"github.com/tbud/x/log"
 	"os"
@@ -36,6 +37,15 @@ func init() {
 
 func ContextConfig(conf config.Config) error {
 	return contextConfig.Merge("", conf)
+}
+
+func TaskConfig(key string, value interface{}) error {
+	if len(key) > 0 {
+		key = fmt.Sprintf("%s.%s", CONTEXT_CONFIG_TASK_KEY, key)
+	} else {
+		key = CONTEXT_CONFIG_TASK_KEY
+	}
+	return contextConfig.Merge(key, value)
 }
 
 func ExitIfError(err error) {
