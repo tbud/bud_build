@@ -4,15 +4,32 @@ import (
 	"text/template"
 )
 
-func processScript() {
-	temp, err := template.ParseFiles("")
-	panicOnError(err, "Failed to parse template %s", srcFile)
+const scriptTemplate = `
+package main
 
-	dst, err := os.Create(destFile)
-	panicOnError(err, "Failed to create file %s", dst.Name())
+import (
+	. "fmt"
+	. "os"
+	. "strings"
+	. "math"
+	. "strconv"
+	. "github.com/tbud/x/Config"
+)
 
-	panicOnError(temp.Execute(dst, data), "Failed to render template %s", srcFile)
+func init() {
+	//Args = Args[1:]
+	_ = Printf
+	_ = Exit
+	_ = Contains
+	_ = Abs
+	_ = Atoi
+}
 
-	panicOnError(dst.Close(), "Failed to close file %s", dst.Name())
+func main() {
+	Println("hello world")
+}
+`
+
+func Run(file string) error {
 
 }
