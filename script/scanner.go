@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
-	"strings"
 )
 
 type keywordScanner struct {
@@ -183,6 +182,9 @@ func stateParseLine(s *scriptScanner, c int) int {
 			switch c {
 			default:
 				return scanAppendBuf
+			case '#':
+				s.step = stateCommentInLine
+				return scanContinue
 			case '"':
 				s.bufInQuote = true
 				return scanAppendBuf
@@ -211,22 +213,22 @@ func stateEnd(s *scriptScanner, c int) int {
 	case bufInUnknown:
 		return s.error(c, "unkown script line: "+string(s.parseBuf))
 	case bufInImport:
-		s.Imports = append(s.Imports, strings.TrimSpace(string(s.parseBuf)))
+		s.Imports = append(s.Imports, string(bytes.TrimSpace(s.parseBuf)))
 	case bufInFun:
 		if bytes.Contains(s.parseBuf, []byte("{")) {
-			s.Funcs = append(s.Funcs, strings.TrimSpace(string(s.parseBuf)))
+			s.Funcs = append(s.Funcs, string(bytes.TrimSpace(s.parseBuf)))
 		} else {
 			s.step = stateParseLine
 			return scanAppendBuf
 		}
 	case bufInType:
-		s.Types = append(s.Types, strings.TrimSpace(string(s.parseBuf)))
+		s.Types = append(s.Types, string(bytes.TrimSpace(s.parseBuf)))
 	case bufInConst:
-		s.Consts = append(s.Consts, strings.TrimSpace(string(s.parseBuf)))
+		s.Consts = append(s.Consts, string(bytes.TrimSpace(s.parseBuf)))
 	case bufInVar:
-		s.Vars = append(s.Vars, strings.TrimSpace(string(s.parseBuf)))
+		s.Vars = append(s.Vars, string(bytes.TrimSpace(s.parseBuf)))
 	case bufInLine:
-		s.Lines = append(s.Lines, strings.TrimSpace(string(s.parseBuf)))
+		s.Lines = append(s.Lines, string(bytes.TrimSpace(s.parseBuf)))
 	}
 
 	s.parseBuf = s.parseBuf[:0]
@@ -303,6 +305,14 @@ func stateComment(s *scriptScanner, c int) int {
 	if c == '\n' || c == '\r' {
 		s.step = stateBegin
 		return scanContinue
+	}
+	return scanContinue
+}
+
+func stateCommentInLine(s *scriptScanner, c int) int {
+	if c == '\n' || c == '\r' {
+		s.step = stateParseLine
+		return scanAppendBuf
 	}
 	return scanContinue
 }
