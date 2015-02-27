@@ -65,11 +65,13 @@ func main() {
 	{{ $line }}
 	{{ end }}
 
+	UseTasks()
 	if len(Args) > 0 {
-		UseTasks()
 		for _, cmd := range Args {
 			RunTask(cmd)	
 		}
+	} else {
+		RunTask("default")
 	}
 }
 `
