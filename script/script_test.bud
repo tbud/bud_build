@@ -1,0 +1,42 @@
+import"github.com/tbud/bud/plugins/asset"
+
+import("fmt"
+	"os"
+)
+const a = 1
+const(
+	b = 2
+	c = "33"
+)
+
+# this is a int
+type num int
+func (n *num) add(v int) {
+	n = n + num(v)
+}
+
+type structTest struct{
+	num int				# this is a num
+	str string          # this is a string
+	b   bool
+}
+
+func del(a, b int) int{
+	return a-b
+}
+
+func (s *structTest) String() string {
+	return fmt.Printf("%s, %b, %d", s.str, s.b, s,num)
+}
+
+var ni int
+var(
+	s string
+	bb bool
+)
+name := "bud"
+version := "1.2.1"
+
+Task("clean", Depend("A1", "A2"), func() error {
+	
+})

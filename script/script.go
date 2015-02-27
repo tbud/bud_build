@@ -1,7 +1,7 @@
 package script
 
 import (
-	"text/template"
+// "text/template"
 )
 
 const scriptTemplate = `
@@ -31,5 +31,5 @@ func main() {
 `
 
 func Run(file string) error {
-
+	return nil
 }
