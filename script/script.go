@@ -113,7 +113,7 @@ func parseArgs(args ...string) (arg []string, err error) {
 	return flagSet.Args(), nil
 }
 
-func genScriptFromTemplate(fileName string) (scriptBuf bytes.Buffer, err error) {
+func genScriptBufFromTemplate(fileName string) (buf []byte, err error) {
 	scan := scriptScanner{}
 	err = scan.checkValid(fileName)
 	if err != nil {
@@ -125,7 +125,22 @@ func genScriptFromTemplate(fileName string) (scriptBuf bytes.Buffer, err error) 
 		return
 	}
 
+	var scriptBuf = bytes.Buffer{}
 	err = templ.Execute(&scriptBuf, scan)
+	if err != nil {
+		return
+	}
+
+	if *scriptDebug {
+		buf, err = format.Source(scriptBuf.Bytes())
+		if err != nil {
+			fmt.Println(scriptBuf.String())
+			return
+		}
+	} else {
+		buf = scriptBuf.Bytes()
+	}
+
 	return
 }
 
@@ -135,37 +150,22 @@ func Run(fileName string, args ...string) error {
 		return err
 	}
 
-	scriptBuf, err := genScriptFromTemplate(fileName)
+	scriptBuf, err := genScriptBufFromTemplate(fileName)
 	if err != nil {
 		return err
-	}
-
-	var buf []byte
-	if *scriptDebug {
-		buf, err = format.Source(scriptBuf.Bytes())
-		if err != nil {
-			fmt.Println(scriptBuf.String())
-			return err
-		}
-	} else {
-		buf = scriptBuf.Bytes()
 	}
 
 	tempDir, scriptFile := genDirAndFile(fileName)
-	err = ioutil.WriteFile(scriptFile, buf, 0600)
+	err = ioutil.WriteFile(scriptFile, scriptBuf, 0600)
 	if err != nil {
 		return err
 	}
-
-	timeB := time.Now()
 
 	scriptExe := scriptFile + ".exe" // to be compatible with windows
 	err = builtin.Exec("go", "build", "-o", scriptExe, scriptFile)
 	if err != nil {
 		return err
 	}
-
-	println(time.Now().UnixNano() - timeB.UnixNano())
 
 	err = builtin.Exec(scriptExe, parsedArgs...)
 	if err != nil {
