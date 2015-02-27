@@ -2,6 +2,7 @@ package script
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"github.com/tbud/bud/builtin"
 	"go/format"
@@ -76,6 +77,10 @@ func main() {
 }
 `
 
+var (
+	scriptDebug *bool
+)
+
 func init() {
 	rand.Seed(time.Now().Unix())
 }
@@ -96,28 +101,54 @@ func genDirAndFile(fileName string) (tmpDir string, file string) {
 	}
 }
 
-func Run(fileName string) error {
-	scan := scriptScanner{}
-	err := scan.checkValid(fileName)
+func parseArgs(args ...string) (arg []string, err error) {
+	flagSet := flag.FlagSet{}
+	scriptDebug = flagSet.Bool("d", false, "show debug info")
+
+	err = flagSet.Parse(args)
 	if err != nil {
-		return err
+		return nil, err
+	}
+
+	return flagSet.Args(), nil
+}
+
+func genScriptFromTemplate(fileName string) (scriptBuf bytes.Buffer, err error) {
+	scan := scriptScanner{}
+	err = scan.checkValid(fileName)
+	if err != nil {
+		return
 	}
 
 	templ, err := template.New("").Parse(scriptTemplate)
 	if err != nil {
-		return err
+		return
 	}
 
-	scriptBuf := bytes.Buffer{}
 	err = templ.Execute(&scriptBuf, scan)
+	return
+}
+
+func Run(fileName string, args ...string) error {
+	parsedArgs, err := parseArgs(args...)
 	if err != nil {
 		return err
 	}
 
-	buf, err := format.Source(scriptBuf.Bytes())
+	scriptBuf, err := genScriptFromTemplate(fileName)
 	if err != nil {
-		fmt.Println(scriptBuf.String())
 		return err
+	}
+
+	var buf []byte
+	if *scriptDebug {
+		buf, err = format.Source(scriptBuf.Bytes())
+		if err != nil {
+			fmt.Println(scriptBuf.String())
+			return err
+		}
+	} else {
+		buf = scriptBuf.Bytes()
 	}
 
 	tempDir, scriptFile := genDirAndFile(fileName)
@@ -126,20 +157,26 @@ func Run(fileName string) error {
 		return err
 	}
 
+	timeB := time.Now()
+
 	scriptExe := scriptFile + ".exe" // to be compatible with windows
 	err = builtin.Exec("go", "build", "-o", scriptExe, scriptFile)
 	if err != nil {
 		return err
 	}
 
-	err = builtin.Exec(scriptExe, os.Args[1:]...)
+	println(time.Now().UnixNano() - timeB.UnixNano())
+
+	err = builtin.Exec(scriptExe, parsedArgs...)
 	if err != nil {
 		return err
 	}
 
-	err = os.RemoveAll(tempDir)
-	if err != nil {
-		return err
+	if !*scriptDebug {
+		err = os.RemoveAll(tempDir)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

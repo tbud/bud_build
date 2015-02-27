@@ -69,8 +69,9 @@ func (c *Command) Runnable() bool {
 }
 
 func main() {
-	flag.Parse()
-	args := flag.Args()
+	// flag.Parse()
+	// args := flag.Args()
+	args := os.Args[1:]
 
 	printIcon()
 
@@ -120,7 +121,7 @@ func main() {
 		}
 	}
 
-	runBud(args[1:])
+	runBud(args)
 }
 
 var budIcon = []string{
@@ -192,5 +193,5 @@ func runBud(args []string) {
 		return
 	}
 
-	script.Run(budFile)
+	script.Run(budFile, args...)
 }
