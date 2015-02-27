@@ -3,11 +3,11 @@ package script
 import (
 	"bytes"
 	"fmt"
+	"github.com/tbud/bud/builtin"
 	"go/format"
 	"io/ioutil"
 	"math/rand"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -21,9 +21,11 @@ import (
 	. "fmt"
 	. "os"
 	. "strings"
-	. "math"
+	// . "math"
 	. "strconv"
-	. "github.com/tbud/x/Config"
+	. "github.com/tbud/x/config"
+	. "github.com/tbud/bud/context"
+	. "github.com/tbud/bud/builtin"
 )
 
 {{ range $import := .Imports}}
@@ -47,19 +49,28 @@ import (
 {{ end }}
 
 func init() {
-	//Args = Args[1:]
+	Args = Args[1:]
 	_ = Printf
 	_ = Exit
 	_ = Contains
-	_ = Abs
+	// _ = Abs
 	_ = Atoi
 	_ = Config{}
+	_ = Task
+	_ = Exec
 }
 
 func main() {
-{{ range $line := .Lines}}
-{{ $line }}
-{{ end }}
+	{{ range $line := .Lines}}
+	{{ $line }}
+	{{ end }}
+
+	if len(Args) > 0 {
+		UseTasks()
+		for _, cmd := range Args {
+			RunTask(cmd)	
+		}
+	}
 }
 `
 
@@ -75,7 +86,7 @@ func genDirAndFile(fileName string) (tmpDir string, file string) {
 	}
 
 	for {
-		tmpDir = filepath.Join(base, fmt.Sprintf("%08x", rand.Int63()))
+		tmpDir = filepath.Join(base, fmt.Sprintf("budtmp.%08x", rand.Int63()))
 		if _, err := os.Stat(tmpDir); os.IsNotExist(err) {
 			os.MkdirAll(tmpDir, 0700)
 			return tmpDir, filepath.Join(tmpDir, file)
@@ -113,25 +124,14 @@ func Run(fileName string) error {
 		return err
 	}
 
-	gocmd, err := exec.LookPath("go")
+	scriptExe := scriptFile + ".exe" // to be compatible with windows
+	err = builtin.Exec("go", "build", "-o", scriptExe, scriptFile)
 	if err != nil {
 		return err
 	}
 
-	scriptExe := scriptFile + ".exe" // to be compatible with windows
-	cmd := exec.Command(gocmd, "build", "-o", scriptExe, scriptFile)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
-	if err = cmd.Run(); err != nil {
-		return err
-	}
-
-	exeCmd := exec.Command(scriptExe)
-	exeCmd.Stdout = os.Stdout
-	exeCmd.Stderr = os.Stderr
-	exeCmd.Stdin = os.Stdin
-	if err = exeCmd.Run(); err != nil {
+	err = builtin.Exec(scriptExe, os.Args[1:]...)
+	if err != nil {
 		return err
 	}
 

@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/tbud/bud/script"
 	"go/build"
 	"io"
 	"os"
@@ -191,5 +192,5 @@ func runBud(args []string) {
 		return
 	}
 
-	println(budFile)
+	script.Run(budFile)
 }

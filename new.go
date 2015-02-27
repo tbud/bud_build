@@ -49,4 +49,6 @@ func newCommand(cmd *Command, args []string) {
 
 }
 
-func newBud()
+func newBud() {
+
+}

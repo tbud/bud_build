@@ -1,8 +1,28 @@
-import "github.com/tbud/bud/plugins/asset"
+import (
+	"path/filepath"
+)
 
-name := "bud"
-version := "1.2.1"
+Task("hello", func() error {
+	Println("world")
+	return nil
+})
 
-Task("clean", Depend("A1", "A2"), func() error {
-	
+Task("clean", func() error {
+	matches, err := filepath.Glob("budtmp.*")
+	if err != nil {
+		return err
+	}
+
+	for _, match := range matches {
+		err = RemoveAll(match)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+})
+
+Task("build", func() error {
+	return Exec("go", "get", "github.com/tbud/bud")
 })
