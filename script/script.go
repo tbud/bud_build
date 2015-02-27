@@ -161,7 +161,7 @@ func Run(fileName string, args ...string) error {
 		return err
 	}
 
-	timeB := time.Now()
+	// timeB := time.Now()
 
 	scriptExe := scriptFile + ".exe" // to be compatible with windows
 	// the -ldflags -w could reduce exe size and faster build time
@@ -170,7 +170,7 @@ func Run(fileName string, args ...string) error {
 		return err
 	}
 
-	println(time.Now().UnixNano() - timeB.UnixNano())
+	// println(time.Now().UnixNano() - timeB.UnixNano())
 
 	err = builtin.Exec(scriptExe, parsedArgs...)
 	if err != nil {
