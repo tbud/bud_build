@@ -161,11 +161,16 @@ func Run(fileName string, args ...string) error {
 		return err
 	}
 
+	timeB := time.Now()
+
 	scriptExe := scriptFile + ".exe" // to be compatible with windows
-	err = builtin.Exec("go", "build", "-o", scriptExe, scriptFile)
+	// the -ldflags -w could reduce exe size and faster build time
+	err = builtin.Exec("go", "build", "-ldflags", "-w", "-o", scriptExe, scriptFile)
 	if err != nil {
 		return err
 	}
+
+	println(time.Now().UnixNano() - timeB.UnixNano())
 
 	err = builtin.Exec(scriptExe, parsedArgs...)
 	if err != nil {
