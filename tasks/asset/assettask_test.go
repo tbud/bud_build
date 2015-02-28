@@ -7,16 +7,17 @@ import (
 )
 
 func TestAsset(t *testing.T) {
-	TaskConfig("asset.tobin", Config{
+	TaskConfig("bud.asset", Config{
 		"includes": []string{"*.go"},
 		"output":   "testdata/assets.go",
 		"package":  "testdata",
 	})
 	// TaskConfig("asset.tobin.baseDir", "/Users/mind/gogo/src/github.com/tbud/x")
 
-	UseTasks()
+	// time.Sleep(30 * time.Second)
+	UseTasks("bud")
 
-	err := RunTask("tobin")
+	err := RunTask("asset")
 	if err != nil {
 		t.Error(err)
 	}

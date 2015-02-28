@@ -1,10 +1,5 @@
 #!/usr/bin/env bud
 
-Task("hello", func() error {
-	Println("world")
-	return nil
-})
-
 Task("clean", func() error {
 	return FindFiles(".budtmp.*").Each(RemoveAll)
 })

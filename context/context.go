@@ -11,6 +11,7 @@ import (
 
 const (
 	CONTEXT_CONFIG_TASK_KEY = "tasks"
+	BUD_TASK_PACKAGE        = Group("bud")
 )
 
 var (
@@ -20,12 +21,11 @@ var (
 
 func init() {
 	var err error
-	Log, err = log.New(nil)
-	ExitIfError(err)
 
 	currentUser, uerr := user.Current()
 	ExitIfError(uerr)
 
+	// init config
 	budConf := path.Join(currentUser.HomeDir, ".bud")
 	if _, ferr := os.Stat(budConf); !os.IsNotExist(ferr) {
 		contextConfig, err = config.Load(budConf)
@@ -33,6 +33,10 @@ func init() {
 	} else {
 		contextConfig = config.Config{}
 	}
+
+	// init log
+	Log, err = log.New(contextConfig.SubConfig("log"))
+	ExitIfError(err)
 }
 
 func ContextConfig(conf config.Config) error {

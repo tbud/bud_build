@@ -40,7 +40,7 @@ func init() {
 		panic(err)
 	}
 
-	Task("tobin", &assetTask)
+	Task("asset", BUD_TASK_PACKAGE, &assetTask)
 }
 
 func zipFile(fileName string, baseDir string) (ret []byte) {

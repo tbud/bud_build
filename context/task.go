@@ -11,25 +11,97 @@ import (
 )
 
 type task struct {
-	name        string
-	packageName string
-	depends     []string
-	executor    Executor
-	config      config.Config
-	usageLine   string
+	name      string
+	groupName string
+	depends   []string
+	executor  Executor
+	config    config.Config
+	usageLine string
 }
+
+var _tasks = map[string]*task{}
+var _runningTask = []string{}
 
 type Depends []string
 type Usage string
-type Package string
+type Group string
 
 func Depend(tasks ...string) Depends {
 	return Depends(tasks)
 }
 
-var _tasks = map[string]*task{}
+func Task(name string, args ...interface{}) {
+	if len(name) > 0 {
+		if len(args) == 0 {
+			panic("task must have dependence or executor function")
+		}
 
-var _runningTask = []string{}
+		t := task{name: name}
+		for i, arg := range args {
+			switch value := arg.(type) {
+			default:
+				panic(fmt.Errorf("unknown args at arg[%d].", i+1))
+			case Depends:
+				t.depends = []string(value)
+			case Usage:
+				t.usageLine = string(value)
+			case Group:
+				t.groupName = string(value)
+			case func() error:
+				ifPanic(t.executor != nil, fmt.Errorf("there is more than one executor in arg[%d].", i+1))
+				t.executor = &defaultExecutor{runner: value}
+			case Executor:
+				ifPanic(t.executor != nil, fmt.Errorf("there is more than one executor in arg[%d].", i+1))
+				t.executor = value
+			case config.Config:
+				ifPanic(t.config != nil, fmt.Errorf("there is more than one config in arg[%d].", i+1))
+				t.config = value
+			}
+		}
+
+		if len(t.groupName) == 0 {
+			t.groupName = getTaskDefaultGroupName()
+		}
+
+		taskName := fmt.Sprintf("%s.%s", t.groupName, t.name)
+		if _, exist := _tasks[taskName]; exist {
+			panic("task name exist: " + taskName)
+		}
+
+		_tasks[taskName] = &t
+		Log.Debug("Register task, name: %s", taskName)
+	} else {
+		panic("task name is empty")
+	}
+}
+
+func RunTask(taskName string) error {
+	if len(taskName) > 0 {
+		err := configTask(taskName)
+		if err != nil {
+			return err
+		}
+
+		err = checkTaskValidate(taskName)
+		if err != nil {
+			return err
+		}
+
+		return executeTask(taskName)
+	} else {
+		return fmt.Errorf("task name is empty")
+	}
+}
+
+func UseTasks(groupNames ...string) {
+	if len(groupNames) == 0 {
+		setTaskToDefault(getTaskDefaultGroupName())
+	} else {
+		for _, groupName := range groupNames {
+			setTaskToDefault(groupName)
+		}
+	}
+}
 
 func pushTask(taskName string) error {
 	if len(_runningTask) == 0 {
@@ -57,51 +129,7 @@ func ifPanic(bPanic bool, err error) {
 	}
 }
 
-func Task(name string, args ...interface{}) {
-	if len(name) > 0 {
-		if len(args) == 0 {
-			panic("task must have dependence or executor function")
-		}
-
-		t := task{name: name}
-		for i, arg := range args {
-			switch value := arg.(type) {
-			default:
-				panic(fmt.Errorf("unknown args at arg[%d].", i+1))
-			case Depends:
-				t.depends = []string(value)
-			case Usage:
-				t.usageLine = string(value)
-			case Package:
-				t.packageName = string(value)
-			case func() error:
-				ifPanic(t.executor != nil, fmt.Errorf("there is more than one executor in arg[%d].", i+1))
-				t.executor = &defaultExecutor{runner: value}
-			case Executor:
-				ifPanic(t.executor != nil, fmt.Errorf("there is more than one executor in arg[%d].", i+1))
-				t.executor = value
-			case config.Config:
-				ifPanic(t.config != nil, fmt.Errorf("there is more than one config in arg[%d].", i+1))
-				t.config = value
-			}
-		}
-
-		if len(t.packageName) == 0 {
-			t.packageName = getTaskDefaultPackageName()
-		}
-
-		taskName := fmt.Sprintf("%s.%s", t.packageName, t.name)
-		if _, exist := _tasks[taskName]; exist {
-			panic("task name exist: " + taskName)
-		}
-
-		_tasks[taskName] = &t
-	} else {
-		panic("task name is empty")
-	}
-}
-
-func getTaskDefaultPackageName() string {
+func getTaskDefaultGroupName() string {
 	_, file, _, ok := runtime.Caller(2)
 	if !ok {
 		file = "???"
@@ -112,28 +140,10 @@ func getTaskDefaultPackageName() string {
 	return baseDir
 }
 
-func RunTask(taskName string) error {
-	if len(taskName) > 0 {
-		err := configTask(taskName)
-		if err != nil {
-			return err
-		}
-
-		err = checkTaskValidate(taskName)
-		if err != nil {
-			return err
-		}
-
-		return executeTask(taskName)
-	} else {
-		return fmt.Errorf("task name is empty")
-	}
-}
-
 func configTask(taskName string) error {
 	return walkTask(taskName, func(t *task) error {
 		if t.executor != nil {
-			conf := contextConfig.SubConfig(CONTEXT_CONFIG_TASK_KEY).SubConfig(t.packageName).SubConfig(t.name)
+			conf := contextConfig.SubConfig(CONTEXT_CONFIG_TASK_KEY).SubConfig(t.groupName).SubConfig(t.name)
 			if conf != nil {
 				err := configExecutor(t.executor, conf)
 				if err != nil {
@@ -234,18 +244,8 @@ func walkTask(taskName string, doTask func(t *task) error) error {
 	}
 }
 
-func UseTasks(packageNames ...string) {
-	if len(packageNames) == 0 {
-		setTaskToDefault(getTaskDefaultPackageName())
-	} else {
-		for _, packageName := range packageNames {
-			setTaskToDefault(packageName)
-		}
-	}
-}
-
-func setTaskToDefault(packageName string) {
-	packagePrefix := packageName + "."
+func setTaskToDefault(groupName string) {
+	packagePrefix := groupName + "."
 	packagePrefixLen := len(packagePrefix)
 	for taskName, task := range _tasks {
 		if strings.HasPrefix(taskName, packagePrefix) {

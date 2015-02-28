@@ -67,10 +67,18 @@ func main() {
 	UseTasks()
 	if len(Args) > 0 {
 		for _, cmd := range Args {
-			RunTask(cmd)	
+			err := RunTask(cmd)
+			if err != nil {
+				Log.Error("%v", err)
+				Exit(1)
+			}
 		}
 	} else {
-		RunTask("default")
+		err := RunTask("default")
+		if err != nil {
+			Log.Error("%v", err)
+			Exit(1)
+		}
 	}
 }
 `
