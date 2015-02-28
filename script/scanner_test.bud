@@ -34,8 +34,10 @@ var(
 	s string
 	bb bool
 )
-name := "bud"
+nameQuote := "--\"彭毅\"--"
 version := "1.2.1"
+f:= 1.23
+uc:="\u19ef"
 
 Task("clean", Depend("A1", "A2"), func() error {
 	

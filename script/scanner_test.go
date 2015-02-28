@@ -38,7 +38,7 @@ func TestScriptScanner(t *testing.T) {
 		t.Errorf("var num %d, got :%v", len(scan.Vars), scan.Vars)
 	}
 
-	if len(scan.Lines) != 3 {
+	if len(scan.Lines) != 5 {
 		for _, line := range scan.Lines {
 			println(line)
 		}

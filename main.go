@@ -137,7 +137,7 @@ var budIcon = []string{
 	"Bud aim to be a full stack develop tool for Go language.",
 }
 
-var usageTemplate = `Welcome to bud 0.0.3!
+var usageTemplate = `Welcome to bud 0.0.4!
 
 The commands are available:
 ---------------------------{{range .}}{{if .Runnable}}
