@@ -180,17 +180,33 @@ func printUsage(w io.Writer) {
 }
 
 func runBud(args []string) {
-	budFile, err := filepath.Abs("build.bud")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Get build.bud file error: %v", err)
-		return
+	var budFile string
+	var err error
+	useDefaultBudFile := true
+	if len(args) > 0 {
+		budFile, err = filepath.Abs(args[0])
+		if err == nil {
+			if fi, err := os.Stat(budFile); !os.IsNotExist(err) && !fi.IsDir() {
+				useDefaultBudFile = false
+			}
+		}
 	}
 
-	if _, err = os.Stat(budFile); os.IsNotExist(err) {
-		fmt.Fprint(os.Stderr, "\n\x1B[31mThis is not a bud application!\x1B[39m\n\n")
-		println(helpNoneBudDir)
-		println(helpFootprint)
-		return
+	if useDefaultBudFile {
+		budFile, err = filepath.Abs("build.bud")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Get build.bud file error: %v", err)
+			return
+		}
+
+		if _, err = os.Stat(budFile); os.IsNotExist(err) {
+			fmt.Fprint(os.Stderr, "\n\x1B[31mThis is not a bud application!\x1B[39m\n\n")
+			println(helpNoneBudDir)
+			println(helpFootprint)
+			return
+		}
+	} else {
+		args = args[1:]
 	}
 
 	script.Run(budFile, args...)

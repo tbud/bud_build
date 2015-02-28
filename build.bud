@@ -1,3 +1,4 @@
+#!/usr/bin/env bud
 
 Task("hello", func() error {
 	Println("world")
@@ -5,7 +6,7 @@ Task("hello", func() error {
 })
 
 Task("clean", func() error {
-	return FindFiles("budtmp.*").Each(RemoveAll)
+	return FindFiles(".budtmp.*").Each(RemoveAll)
 })
 
 Task("build", func() error {

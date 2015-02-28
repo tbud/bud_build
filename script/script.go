@@ -22,7 +22,6 @@ import (
 	. "fmt"
 	. "os"
 	. "strings"
-	// . "math"
 	. "strconv"
 	. "github.com/tbud/x/config"
 	. "github.com/tbud/bud/context"
@@ -54,7 +53,6 @@ func init() {
 	_ = Printf
 	_ = Exit
 	_ = Contains
-	// _ = Abs
 	_ = Atoi
 	_ = Config{}
 	_ = Task
@@ -93,7 +91,7 @@ func genDirAndFile(fileName string) (tmpDir string, file string) {
 	}
 
 	for {
-		tmpDir = filepath.Join(base, fmt.Sprintf("budtmp.%08x", rand.Int63()))
+		tmpDir = filepath.Join(base, fmt.Sprintf(".budtmp.%08x", rand.Int63()))
 		if _, err := os.Stat(tmpDir); os.IsNotExist(err) {
 			os.MkdirAll(tmpDir, 0700)
 			return tmpDir, filepath.Join(tmpDir, file)
