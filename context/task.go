@@ -215,6 +215,7 @@ func checkTaskValidate(taskName string) error {
 func executeTask(taskName string) error {
 	return walkTask(taskName, func(t *task) error {
 		if t.executor != nil {
+			Log.Debug("execute task '%s'.\nexecutor: %+v", t.name, t.executor)
 			return t.executor.Execute()
 		}
 		return nil

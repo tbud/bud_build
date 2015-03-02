@@ -26,3 +26,7 @@ func (d *defaultExecutor) Validate() error {
 	}
 	return nil
 }
+
+func (d *defaultExecutor) String() string {
+	return "Default Executor"
+}

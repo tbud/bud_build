@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"fmt"
+	. "github.com/tbud/bud/context"
 	"io"
 	"os"
 	"time"
@@ -31,8 +32,10 @@ func Open(name string) (rc io.ReadCloser, err error) {
 	}
 
 	if asset, exist := _assets[name]; exist {
+		Log.Debug("Open '%s' from asset.", name)
 		return &asset, nil
 	} else {
+		Log.Debug("Open '%s' from file system.", name)
 		return os.Open(name)
 	}
 }
@@ -43,8 +46,10 @@ func Stat(name string) (fi os.FileInfo, err error) {
 	}
 
 	if asset, exist := _assets[name]; exist {
+		Log.Debug("Load '%s' state from asset.", name)
 		return &asset, nil
 	} else {
+		Log.Debug("Load '%s' state from file system.", name)
 		return os.Stat(name)
 	}
 }
