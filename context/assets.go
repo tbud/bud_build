@@ -1,9 +1,9 @@
 
-package main
+package context
 
 import (
 	"time"
-	"github.com/tbud/bud/tasks/asset"
+	"github.com/tbud/bud/asset"
 )	
 
 func init() {

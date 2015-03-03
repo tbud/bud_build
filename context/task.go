@@ -143,7 +143,7 @@ func getTaskDefaultGroupName() string {
 func configTask(taskName string) error {
 	return walkTask(taskName, func(t *task) error {
 		if t.executor != nil {
-			conf := contextConfig.SubConfig(CONTEXT_CONFIG_TASK_KEY).SubConfig(t.groupName).SubConfig(t.name)
+			conf := _contextConfig.SubConfig(CONTEXT_CONFIG_TASK_KEY).SubConfig(t.groupName).SubConfig(t.name)
 			if conf != nil {
 				err := configExecutor(t.executor, conf)
 				if err != nil {

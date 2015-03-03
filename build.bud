@@ -6,7 +6,8 @@ import (
 # config asset plugin
 TaskConfig("bud.asset", Config{
 		"includes": []string{"bud.conf"},
-		"output":   "assets.go",
+		"output":   "context/assets.go",
+		"package": "context",
 })
 
 UseTasks("bud")

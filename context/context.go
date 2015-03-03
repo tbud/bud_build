@@ -5,6 +5,7 @@ import (
 	"github.com/tbud/bud/asset"
 	"github.com/tbud/x/config"
 	"github.com/tbud/x/log"
+	"io"
 	"os"
 	"os/user"
 	"path"
@@ -16,8 +17,8 @@ const (
 )
 
 var (
-	contextConfig config.Config
-	Log           *log.Logger
+	_contextConfig config.Config
+	Log            *log.Logger
 )
 
 func init() {
@@ -27,17 +28,24 @@ func init() {
 	ExitIfError(uerr)
 
 	// get bud.conf from asset
+	var reader io.ReadCloser
+	reader, err = asset.Open("bud.conf")
+	ExitIfError(err)
+	_contextConfig, err = config.Read(reader)
+	ExitIfError(err)
+	reader.Close()
+
 	// init config
 	budConf := path.Join(currentUser.HomeDir, ".bud")
 	if _, ferr := os.Stat(budConf); !os.IsNotExist(ferr) {
+		var contextConfig config.Config
 		contextConfig, err = config.Load(budConf)
 		ExitIfError(err)
-	} else {
-		contextConfig = config.Config{}
+		_contextConfig.Merge("", contextConfig)
 	}
 
 	// init log
-	Log, err = log.New(contextConfig.SubConfig("log"))
+	Log, err = log.New(_contextConfig.SubConfig("log"))
 	ExitIfError(err)
 
 	// init asset log
@@ -45,7 +53,7 @@ func init() {
 }
 
 func ContextConfig(conf config.Config) error {
-	return contextConfig.Merge("", conf)
+	return _contextConfig.Merge("", conf)
 }
 
 func TaskConfig(key string, value interface{}) error {
@@ -54,7 +62,7 @@ func TaskConfig(key string, value interface{}) error {
 	} else {
 		key = CONTEXT_CONFIG_TASK_KEY
 	}
-	return contextConfig.Merge(key, value)
+	return _contextConfig.Merge(key, value)
 }
 
 func ExitIfError(err error) {

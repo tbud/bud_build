@@ -14,6 +14,10 @@ var _assets = map[string]Asset{}
 
 var _logger *log.Logger
 
+func init() {
+	_logger, _ = log.New(nil)
+}
+
 // call this function in 'init' func
 func InitLog(logger *log.Logger) {
 	_logger = logger
@@ -39,10 +43,10 @@ func Open(name string) (rc io.ReadCloser, err error) {
 	}
 
 	if asset, exist := _assets[name]; exist {
-		_logger.Debug("Open '%s' from asset.", name)
+		_logger.Info("Open '%s' from asset.", name)
 		return &asset, nil
 	} else {
-		_logger.Debug("Open '%s' from file system.", name)
+		_logger.Info("Open '%s' from file system.", name)
 		return os.Open(name)
 	}
 }
@@ -53,21 +57,21 @@ func Stat(name string) (fi os.FileInfo, err error) {
 	}
 
 	if asset, exist := _assets[name]; exist {
-		_logger.Debug("Load '%s' state from asset.", name)
+		_logger.Info("Load '%s' state from asset.", name)
 		return &asset, nil
 	} else {
-		_logger.Debug("Load '%s' state from file system.", name)
+		_logger.Info("Load '%s' state from file system.", name)
 		return os.Stat(name)
 	}
 }
 
 type Asset struct {
-	N   string      // save name
-	Z   []byte      // save compressed data
-	S   int         // origin file size
-	M   os.FileMode // file mode
-	MT  time.Time   // file mod time
-	Buf *bytes.Buffer
+	N   string        // save name
+	Z   []byte        // save compressed data
+	S   int           // origin file size
+	M   os.FileMode   // file mode
+	MT  time.Time     // file mod time
+	Buf *bytes.Buffer // used by read method
 }
 
 func (a *Asset) Read(p []byte) (n int, err error) {
