@@ -25,6 +25,7 @@ func init() {
 	currentUser, uerr := user.Current()
 	ExitIfError(uerr)
 
+	// get bud.conf from asset
 	// init config
 	budConf := path.Join(currentUser.HomeDir, ".bud")
 	if _, ferr := os.Stat(budConf); !os.IsNotExist(ferr) {

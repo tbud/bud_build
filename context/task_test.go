@@ -105,7 +105,7 @@ func TestTask(t *testing.T) {
 }
 
 func TestFullTask(t *testing.T) {
-	Task("f1", Package("py"), Usage("for test"), func() error {
+	Task("f1", Group("py"), Usage("for test"), func() error {
 		fmt.Println("in f1")
 		return nil
 	})

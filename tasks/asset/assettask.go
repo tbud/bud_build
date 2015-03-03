@@ -192,3 +192,24 @@ func checkFilePath(baseDir string, filePaths []string, fun func(matches []string
 	}
 	return nil
 }
+
+const assetTemplate = `
+package {{ .assetTask.Package }}
+
+import (
+	"time"
+	"github.com/tbud/bud/tasks/asset"
+)	
+
+func init() {
+	asset.Register([]asset.Asset{
+		{{ range $asset := .assets }}{
+			N: "{{ $asset.N }}",
+			Z: []byte("{{ zipFile $asset.N $.assetTask.BaseDir | printf "%s" }}"),
+			S: {{ $asset.S }},
+			M: {{ printf "%d" $asset.M }},
+			MT : time.Unix({{ $asset.MT.Unix }}, 0),
+		},{{ end }}
+	})
+}
+`

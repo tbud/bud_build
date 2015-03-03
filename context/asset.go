@@ -1,10 +1,9 @@
-package asset
+package context
 
 import (
 	"bytes"
 	"compress/gzip"
 	"fmt"
-	. "github.com/tbud/bud/context"
 	"io"
 	"os"
 	"time"
@@ -111,24 +110,3 @@ func (a *Asset) IsDir() bool {
 func (a *Asset) Sys() interface{} {
 	return nil
 }
-
-const assetTemplate = `
-package {{ .assetTask.Package }}
-
-import (
-	"time"
-	"github.com/tbud/bud/tasks/asset"
-)	
-
-func init() {
-	asset.Register([]asset.Asset{
-		{{ range $asset := .assets }}{
-			N: "{{ $asset.N }}",
-			Z: []byte("{{ zipFile $asset.N $.assetTask.BaseDir | printf "%s" }}"),
-			S: {{ $asset.S }},
-			M: {{ printf "%d" $asset.M }},
-			MT : time.Unix({{ $asset.MT.Unix }}, 0),
-		},{{ end }}
-	})
-}
-`
