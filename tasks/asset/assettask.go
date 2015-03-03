@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"fmt"
+	. "github.com/tbud/bud/asset"
 	. "github.com/tbud/bud/context"
 	"github.com/tbud/x/container/set"
 	"io"
@@ -198,7 +199,7 @@ package {{ .assetTask.Package }}
 
 import (
 	"time"
-	"github.com/tbud/bud/tasks/asset"
+	"github.com/tbud/bud/asset"
 )	
 
 func init() {

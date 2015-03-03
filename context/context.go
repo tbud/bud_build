@@ -2,6 +2,7 @@ package context
 
 import (
 	"fmt"
+	"github.com/tbud/bud/asset"
 	"github.com/tbud/x/config"
 	"github.com/tbud/x/log"
 	"os"
@@ -38,6 +39,9 @@ func init() {
 	// init log
 	Log, err = log.New(contextConfig.SubConfig("log"))
 	ExitIfError(err)
+
+	// init asset log
+	asset.InitLog(Log)
 }
 
 func ContextConfig(conf config.Config) error {

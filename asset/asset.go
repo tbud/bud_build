@@ -1,15 +1,23 @@
-package context
+package asset
 
 import (
 	"bytes"
 	"compress/gzip"
 	"fmt"
+	"github.com/tbud/x/log"
 	"io"
 	"os"
 	"time"
 )
 
 var _assets = map[string]Asset{}
+
+var _logger *log.Logger
+
+// call this function in 'init' func
+func InitLog(logger *log.Logger) {
+	_logger = logger
+}
 
 func Register(assets []Asset) {
 	if assets == nil {
@@ -31,10 +39,10 @@ func Open(name string) (rc io.ReadCloser, err error) {
 	}
 
 	if asset, exist := _assets[name]; exist {
-		Log.Debug("Open '%s' from asset.", name)
+		_logger.Debug("Open '%s' from asset.", name)
 		return &asset, nil
 	} else {
-		Log.Debug("Open '%s' from file system.", name)
+		_logger.Debug("Open '%s' from file system.", name)
 		return os.Open(name)
 	}
 }
@@ -45,10 +53,10 @@ func Stat(name string) (fi os.FileInfo, err error) {
 	}
 
 	if asset, exist := _assets[name]; exist {
-		Log.Debug("Load '%s' state from asset.", name)
+		_logger.Debug("Load '%s' state from asset.", name)
 		return &asset, nil
 	} else {
-		Log.Debug("Load '%s' state from file system.", name)
+		_logger.Debug("Load '%s' state from file system.", name)
 		return os.Stat(name)
 	}
 }
