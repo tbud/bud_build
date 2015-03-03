@@ -1,13 +1,10 @@
 package seed
 
 import (
+	"bufio"
 	"fmt"
 	. "github.com/tbud/bud/context"
-	"io"
 	"os"
-	"path/filepath"
-	"strings"
-	"text/template"
 )
 
 const Seed_Template_Suffix = ".seedtemplate"
@@ -39,15 +36,82 @@ func Register(seed Seed) {
 	}
 }
 
-func First() Seed {
+func CreateSeed(args ...string) {
 	if len(_seeds) == 0 {
+		Log.Error("There is no seed to use.")
+		return
+	}
+
+	initExitSign()
+
+	seed := selectSeed()
+
+	var step *Step
+	var err error
+	step, err = seed.Start(args...)
+	if err != nil {
+		Log.Error("%v", err)
+		return
+	}
+
+	fmt.Println(step.Message)
+
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		step, err = seed.NextStep(scanner.Text())
+		if err != nil {
+			Log.Error("%v", err)
+			return
+		}
+		if step == nil {
+			break
+		} else {
+			fmt.Println(step.Message)
+		}
+	}
+
+	return
+}
+
+func initExitSign() {
+}
+
+func selectSeed() (seed Seed) {
+	fmt.Println("Please select a seed to create.")
+	each(func(seed Seed) error {
+		fmt.Printf("\t%s\t-%s\n", seed.Name(), seed.Description())
 		return nil
+	})
+	fmt.Printf("What is the seed name? [%s]\n", _seeds[0].Name())
+
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		name := scanner.Text()
+		if len(name) == 0 {
+			seed = _seeds[0]
+		} else {
+			seed = getSeed(name)
+		}
+
+		if seed == nil {
+			fmt.Println("Please input a valid seed name.")
+		} else {
+			break
+		}
+	}
+
+	return
+}
+
+func getSeed(name string) Seed {
+	if index, exist := _seedNames[name]; exist {
+		return _seeds[index]
 	} else {
-		return _seeds[0]
+		return nil
 	}
 }
 
-func Each(fun func(Seed) error) error {
+func each(fun func(Seed) error) error {
 	for _, seed := range _seeds {
 		err := fun(seed)
 		if err != nil {
@@ -57,106 +121,17 @@ func Each(fun func(Seed) error) error {
 	return nil
 }
 
-func GetSeed(name string) Seed {
-	if index, exist := _seedNames[name]; exist {
-		return _seeds[index]
-	} else {
-		return nil
-	}
+const scriptTemplate = `
+package main
+
+import (
+	"github.com/tbud/bud/seed"
+{{ range $seed := .Seeds}}
+	_ "{{ $seed }}"
+{{ end }}
+)
+
+func main() {
+	seed.CreateSeed()
 }
-
-func CreateArchetype(destDir, srcDir string, data interface{}) error {
-	var archetypeDir string
-	// check seed dir wether or not a link
-	fi, err := os.Lstat(srcDir)
-	if err == nil && fi.Mode()&os.ModeSymlink == os.ModeSymlink {
-		if archetypeDir, err = os.Readlink(srcDir); err != nil {
-			Log.Error("%v", err)
-			return fmt.Errorf("Read link err %s", srcDir)
-		}
-	} else {
-		archetypeDir = srcDir
-	}
-
-	// check seed archetype dir is exist
-	if _, err := os.Stat(archetypeDir); err != nil {
-		if os.IsNotExist(err) {
-			Log.Error("%v", err)
-			return fmt.Errorf("Seed archetype not exist: %s", archetypeDir)
-		}
-	}
-
-	if err = os.MkdirAll(destDir, 0777); err != nil {
-		Log.Error("%v", err)
-		return fmt.Errorf("Failed to create directory: %s", destDir)
-	}
-
-	err = filepath.Walk(archetypeDir, func(path string, info os.FileInfo, err error) error {
-		relSrcPath := strings.TrimLeft(path[len(archetypeDir):], string(os.PathSeparator))
-		destPath := filepath.Join(destDir, relSrcPath)
-
-		if strings.HasPrefix(relSrcPath, ".") {
-			if info.IsDir() {
-				return filepath.SkipDir
-			}
-		}
-
-		if info.IsDir() {
-			err = os.MkdirAll(destPath, 0777)
-			if !os.IsNotExist(err) {
-				return err
-			}
-			return nil
-		}
-
-		if strings.HasSuffix(relSrcPath, Seed_Template_Suffix) {
-			return copyTemplateFile(destPath[:len(destPath)-len(Seed_Template_Suffix)], path, data)
-		}
-
-		return copyFile(destPath, path)
-	})
-
-	if err != nil {
-		Log.Error("%v", err)
-	}
-	return err
-}
-
-func copyFile(destFile, srcFile string) (err error) {
-	var dst, src *os.File
-	if dst, err = os.Create(destFile); err != nil {
-		return
-	}
-
-	if src, err = os.Open(srcFile); err != nil {
-		return
-	}
-
-	if _, err = io.Copy(dst, src); err != nil {
-		return
-	}
-
-	if err = src.Close(); err != nil {
-		return
-	}
-
-	return dst.Close()
-}
-
-func copyTemplateFile(destFile, srcFile string, data interface{}) (err error) {
-	var temp *template.Template
-	if temp, err = template.ParseFiles(srcFile); err != nil {
-		return err
-	}
-
-	var dst *os.File
-	if dst, err = os.Create(destFile); err != nil {
-		return err
-	}
-
-	if err = temp.Execute(dst, data); err != nil {
-		return err
-	}
-
-	return dst.Close()
-}
+`

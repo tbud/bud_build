@@ -10,7 +10,6 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
-	"strings"
 	"text/template"
 	"time"
 )
@@ -91,18 +90,17 @@ func init() {
 	rand.Seed(time.Now().Unix())
 }
 
-func genDirAndFile(fileName string) (tmpDir string, file string) {
-	base, file := filepath.Split(fileName)
-
-	if !strings.HasSuffix(file, ".go") {
-		file = file + ".go"
+func genDirAndFile() (tmpDir string, file string) {
+	base, err := os.Getwd()
+	if err != nil {
+		base = os.TempDir()
 	}
 
 	for {
 		tmpDir = filepath.Join(base, fmt.Sprintf(".budtmp.%08x", rand.Int63()))
 		if _, err := os.Stat(tmpDir); os.IsNotExist(err) {
 			os.MkdirAll(tmpDir, 0700)
-			return tmpDir, filepath.Join(tmpDir, file)
+			return tmpDir, filepath.Join(tmpDir, "script.go")
 		}
 	}
 }
@@ -119,25 +117,19 @@ func parseArgs(args ...string) (arg []string, err error) {
 	return flagSet.Args(), nil
 }
 
-func genScriptBufFromTemplate(fileName string) (buf []byte, err error) {
-	scan := scriptScanner{}
-	err = scan.checkValid(fileName)
-	if err != nil {
-		return
-	}
-
-	templ, err := template.New("").Parse(scriptTemplate)
+func genScriptBufFromTemplate(script string, debug bool, data interface{}) (buf []byte, err error) {
+	templ, err := template.New("").Parse(script)
 	if err != nil {
 		return
 	}
 
 	var scriptBuf = bytes.Buffer{}
-	err = templ.Execute(&scriptBuf, scan)
+	err = templ.Execute(&scriptBuf, data)
 	if err != nil {
 		return
 	}
 
-	if *scriptDebug {
+	if debug {
 		buf, err = format.Source(scriptBuf.Bytes())
 		if err != nil {
 			fmt.Println(scriptBuf.String())
@@ -150,18 +142,13 @@ func genScriptBufFromTemplate(fileName string) (buf []byte, err error) {
 	return
 }
 
-func Run(fileName string, args ...string) error {
-	parsedArgs, err := parseArgs(args...)
+func RunScript(script string, debug bool, data interface{}, args ...string) error {
+	scriptBuf, err := genScriptBufFromTemplate(script, debug, data)
 	if err != nil {
 		return err
 	}
 
-	scriptBuf, err := genScriptBufFromTemplate(fileName)
-	if err != nil {
-		return err
-	}
-
-	tempDir, scriptFile := genDirAndFile(fileName)
+	tempDir, scriptFile := genDirAndFile()
 	err = ioutil.WriteFile(scriptFile, scriptBuf, 0600)
 	if err != nil {
 		return err
@@ -178,7 +165,7 @@ func Run(fileName string, args ...string) error {
 
 	// println(time.Now().UnixNano() - timeB.UnixNano())
 
-	err = builtin.Exec(scriptExe, parsedArgs...)
+	err = builtin.Exec(scriptExe, args...)
 	if err != nil {
 		return err
 	}
@@ -191,4 +178,20 @@ func Run(fileName string, args ...string) error {
 	}
 
 	return nil
+
+}
+
+func Run(fileName string, args ...string) error {
+	parsedArgs, err := parseArgs(args...)
+	if err != nil {
+		return err
+	}
+
+	scan := scriptScanner{}
+	err = scan.checkValid(fileName)
+	if err != nil {
+		return err
+	}
+
+	return RunScript(scriptTemplate, *scriptDebug, scan, parsedArgs...)
 }

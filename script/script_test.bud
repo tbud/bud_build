@@ -1,1 +1,4 @@
-Println("hello 彭毅!")
+Task("default", func() error {
+	Println("hello 彭毅!")
+	return nil	
+})

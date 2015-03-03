@@ -23,6 +23,7 @@ var (
 
 func init() {
 	var err error
+	Log, err = log.New(nil)
 
 	currentUser, uerr := user.Current()
 	ExitIfError(uerr)
