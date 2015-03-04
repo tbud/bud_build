@@ -13,7 +13,7 @@ import (
 
 const (
 	CONTEXT_CONFIG_TASK_KEY = "tasks"
-	BUD_TASK_PACKAGE        = Group("bud")
+	BUD_TASK_GROUP          = Group("bud")
 )
 
 var (

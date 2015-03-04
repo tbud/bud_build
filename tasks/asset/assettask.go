@@ -41,7 +41,7 @@ func init() {
 		panic(err)
 	}
 
-	Task("asset", BUD_TASK_PACKAGE, &assetTask)
+	Task("asset", BUD_TASK_GROUP, &assetTask, Usage("Package file into bin."))
 }
 
 func zipFile(fileName string, baseDir string) (ret []byte) {

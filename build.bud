@@ -1,7 +1,4 @@
 #!/usr/bin/env bud
-import (
-	_ "github.com/tbud/bud/tasks/asset"
-)
 
 # config asset plugin
 TaskConfig("bud.asset", Config{
@@ -12,14 +9,8 @@ TaskConfig("bud.asset", Config{
 
 UseTasks("bud")
 
-
-Task("clean", func() error {
-	return FindFiles(".budtmp.*").Each(RemoveAll)
-})
-
 Task("build", Depend("asset"), func() error {
 	return Exec("go", "get", "github.com/tbud/bud")
 })
 
 Task("default", Depend("clean", "build"))
-

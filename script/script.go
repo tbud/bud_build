@@ -25,6 +25,7 @@ import (
 	. "github.com/tbud/x/config"
 	. "github.com/tbud/bud/context"
 	. "github.com/tbud/bud/builtin"
+	_ "github.com/tbud/bud/tasks"
 )
 
 {{ range $import := .Imports}}
