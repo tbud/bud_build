@@ -13,4 +13,4 @@ Task("build", Depend("asset"), func() error {
 	return Exec("go", "get", "github.com/tbud/bud")
 })
 
-Task("default", Depend("clean", "build"))
+Task("default", Depend("build"))

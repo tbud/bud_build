@@ -7,9 +7,11 @@ import (
 	"github.com/tbud/bud/builtin"
 	"go/format"
 	"io/ioutil"
+	"math"
 	"math/rand"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
 	"time"
 )
@@ -133,14 +135,27 @@ func genScriptBufFromTemplate(script string, debug bool, data interface{}) (buf 
 	if debug {
 		buf, err = format.Source(scriptBuf.Bytes())
 		if err != nil {
-			fmt.Println(scriptBuf.String())
+			if len(buf) == 0 {
+				printScriptWithLineNumber(scriptBuf.String())
+			}
 			return
+		} else {
+			printScriptWithLineNumber(string(buf))
 		}
 	} else {
 		buf = scriptBuf.Bytes()
 	}
 
 	return
+}
+
+func printScriptWithLineNumber(script string) {
+	lines := strings.Split(script, "\n")
+	lineNumberLen := int(math.Floor(math.Log10(float64(len(lines)))) + 1)
+	lineNoFormat := fmt.Sprintf("%%%dd: %%s\n", lineNumberLen)
+	for i, line := range strings.Split(script, "\n") {
+		fmt.Printf(lineNoFormat, i+1, line)
+	}
 }
 
 func RunScript(script string, debug bool, data interface{}, args ...string) error {
@@ -153,6 +168,9 @@ func RunScript(script string, debug bool, data interface{}, args ...string) erro
 	err = ioutil.WriteFile(scriptFile, scriptBuf, 0600)
 	if err != nil {
 		return err
+	}
+	if !debug {
+		defer os.RemoveAll(tempDir)
 	}
 
 	// timeB := time.Now()
@@ -171,15 +189,7 @@ func RunScript(script string, debug bool, data interface{}, args ...string) erro
 		return err
 	}
 
-	if !debug {
-		err = os.RemoveAll(tempDir)
-		if err != nil {
-			return err
-		}
-	}
-
 	return nil
-
 }
 
 func Run(fileName string, args ...string) error {

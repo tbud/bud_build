@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	. "github.com/tbud/bud/context"
 	"github.com/tbud/bud/script"
 	"github.com/tbud/bud/seed"
 	"go/build"
@@ -120,5 +121,8 @@ func runBud(args []string) {
 		args = args[1:]
 	}
 
-	script.Run(budFile, args...)
+	err = script.Run(budFile, args...)
+	if err != nil {
+		Log.Error("%v", err)
+	}
 }
