@@ -170,7 +170,7 @@ func RunScript(script string, debug bool, data interface{}, args ...string) erro
 		return err
 	}
 
-	if !*scriptDebug {
+	if !debug {
 		err = os.RemoveAll(tempDir)
 		if err != nil {
 			return err

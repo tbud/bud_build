@@ -17,8 +17,8 @@ const (
 )
 
 var (
-	_contextConfig config.Config
-	Log            *log.Logger
+	ContextConfig config.Config
+	Log           *log.Logger
 )
 
 func init() {
@@ -32,7 +32,7 @@ func init() {
 	var reader io.ReadCloser
 	reader, err = asset.Open("bud.conf")
 	ExitIfError(err)
-	_contextConfig, err = config.Read(reader)
+	ContextConfig, err = config.Read(reader)
 	ExitIfError(err)
 	reader.Close()
 
@@ -42,19 +42,15 @@ func init() {
 		var contextConfig config.Config
 		contextConfig, err = config.Load(budConf)
 		ExitIfError(err)
-		_contextConfig.Merge("", contextConfig)
+		ContextConfig.Merge("", contextConfig)
 	}
 
 	// init log
-	Log, err = log.New(_contextConfig.SubConfig("log"))
+	Log, err = log.New(ContextConfig.SubConfig("log"))
 	ExitIfError(err)
 
 	// init asset log
 	asset.InitLog(Log)
-}
-
-func ContextConfig(conf config.Config) error {
-	return _contextConfig.Merge("", conf)
 }
 
 func TaskConfig(key string, value interface{}) error {
@@ -63,7 +59,7 @@ func TaskConfig(key string, value interface{}) error {
 	} else {
 		key = CONTEXT_CONFIG_TASK_KEY
 	}
-	return _contextConfig.Merge(key, value)
+	return ContextConfig.Merge(key, value)
 }
 
 func ExitIfError(err error) {

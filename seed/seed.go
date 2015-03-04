@@ -4,20 +4,22 @@ import (
 	"bufio"
 	"fmt"
 	. "github.com/tbud/bud/context"
+	"github.com/tbud/bud/script"
 	"os"
 )
 
 const Seed_Template_Suffix = ".seedtemplate"
 
-type Step struct {
+type Prompt struct {
 	Message string
 }
 
 type Seed interface {
 	Name() string
 	Description() string
-	Start(args ...string) (*Step, error)
-	NextStep(input string) (*Step, error)
+	Start(args ...string) (*Prompt, error)
+	NextStep(input string) (*Prompt, error)
+	HasNext() bool
 }
 
 var _seeds = []Seed{}
@@ -42,47 +44,43 @@ func CreateSeed(args ...string) {
 		return
 	}
 
-	initExitSign()
-
 	seed := selectSeed()
 
-	var step *Step
+	var prompt *Prompt
 	var err error
-	step, err = seed.Start(args...)
+	prompt, err = seed.Start(args...)
 	if err != nil {
 		Log.Error("%v", err)
 		return
 	}
 
-	fmt.Println(step.Message)
+	fmt.Println(prompt.Message)
 
 	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Print("> ")
 	for scanner.Scan() {
-		step, err = seed.NextStep(scanner.Text())
+		prompt, err = seed.NextStep(scanner.Text())
 		if err != nil {
 			Log.Error("%v", err)
 			return
 		}
-		if step == nil {
+		if prompt == nil {
 			break
 		} else {
-			fmt.Println(step.Message)
+			fmt.Println(prompt.Message)
+			if seed.HasNext() {
+				fmt.Print("> ")
+			} else {
+				break
+			}
 		}
 	}
 
 	return
 }
 
-func initExitSign() {
-}
-
 func selectSeed() (seed Seed) {
-	fmt.Println("Please select a seed to create.")
-	each(func(seed Seed) error {
-		fmt.Printf("\t%s\t-%s\n", seed.Name(), seed.Description())
-		return nil
-	})
-	fmt.Printf("What is the seed name? [%s]\n", _seeds[0].Name())
+	printSeedList()
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
@@ -94,13 +92,23 @@ func selectSeed() (seed Seed) {
 		}
 
 		if seed == nil {
-			fmt.Println("Please input a valid seed name.")
+			Log.Error("Please input a valid seed name.")
+			printSeedList()
 		} else {
 			break
 		}
 	}
 
 	return
+}
+
+func printSeedList() {
+	fmt.Println("Please select a seed to create.")
+	each(func(seed Seed) error {
+		fmt.Printf("\t%s\t- %s\n", seed.Name(), seed.Description())
+		return nil
+	})
+	fmt.Printf("What is the seed name? [%s]\n> ", _seeds[0].Name())
 }
 
 func getSeed(name string) Seed {
@@ -121,17 +129,25 @@ func each(fun func(Seed) error) error {
 	return nil
 }
 
+func Run(args ...string) {
+	err := script.RunScript(scriptTemplate, false, ContextConfig.StringsDefault("seed", nil), args...)
+	if err != nil {
+		Log.Error("%v", err)
+	}
+}
+
 const scriptTemplate = `
 package main
 
 import (
 	"github.com/tbud/bud/seed"
-{{ range $seed := .Seeds}}
+	"os"
+{{ range $seed := .}}
 	_ "{{ $seed }}"
 {{ end }}
 )
 
 func main() {
-	seed.CreateSeed()
+	seed.CreateSeed(os.Args[1:]...)
 }
 `

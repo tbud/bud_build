@@ -1,72 +1,15 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"github.com/tbud/bud/script"
+	"github.com/tbud/bud/seed"
 	"go/build"
-	"io"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
-	"text/template"
-	"unicode"
-	"unicode/utf8"
 )
-
-// Commands lists the available commands and help topics.
-// The order here is the order in which they are printed by 'go help'.
-var Commands = []*Command{
-	cmdNew,
-}
-
-// A Command is an implementation of a go command
-// like go build or go fix.
-type Command struct {
-	// Run runs the command.
-	// The args are the arguments after the command name.
-	Run func(cmd *Command, args []string)
-
-	// UsageLine is the one-line usage message.
-	// The first word in the line is taken to be the command name.
-	UsageLine string
-
-	// Short is the short description shown in the 'bud help' output.
-	Short string
-
-	// Long is the long message shown in the 'bud help <this-command>' output.
-	Long string
-
-	// Flag is a set of flags specific to this command.
-	Flag flag.FlagSet
-
-	// CustomFlags indicates that the command will do its own
-	// flag parsing.
-	CustomFlags bool
-}
-
-// Name returns the command's name: the first word in the usage line.
-func (c *Command) Name() string {
-	name := c.UsageLine
-	i := strings.Index(name, " ")
-	if i >= 0 {
-		name = name[:i]
-	}
-	return name
-}
-
-func (c *Command) Usage() {
-	fmt.Fprintf(os.Stderr, "usage: %s\n\n", c.UsageLine)
-	fmt.Fprintf(os.Stderr, "%s\n", strings.TrimSpace(c.Long))
-	os.Exit(2)
-}
-
-// Runnable reports whether the command can be run; otherwise
-// it is a documentation pseudo-command such as importpath.
-func (c *Command) Runnable() bool {
-	return c.Run != nil
-}
 
 func main() {
 	// flag.Parse()
@@ -96,29 +39,19 @@ func main() {
 		}
 	}
 
-	if len(args) < 1 {
+	if len(args) == 0 {
 		runBud(nil)
 		return
 	}
 
-	if args[0] == "help" {
-		printUsage(os.Stdout)
+	switch args[0] {
+	case "help":
+		fmt.Print(helpUsage)
 		println(helpFootprint)
 		return
-	}
-
-	for _, cmd := range Commands {
-		if cmd.Name() == args[0] && cmd.Run != nil {
-			cmd.Flag.Usage = func() { cmd.Usage() }
-			if cmd.CustomFlags {
-				args = args[1:]
-			} else {
-				cmd.Flag.Parse(args[1:])
-				args = cmd.Flag.Args()
-			}
-			cmd.Run(cmd, args)
-			return
-		}
+	case "new":
+		seed.Run(args[1:]...)
+		return
 	}
 
 	runBud(args)
@@ -137,11 +70,11 @@ var budIcon = []string{
 	"Bud aim to be a full stack develop tool for Go language.",
 }
 
-var usageTemplate = `Welcome to bud 0.0.4!
+var helpUsage = `Welcome to bud 0.0.5!
 
 The commands are available:
----------------------------{{range .}}{{if .Runnable}}
-    {{.Name | printf "%-11s"}} {{.Short}}{{end}}{{end}}
+---------------------------
+    new         create a bud application from seed
 
 `
 
@@ -151,32 +84,10 @@ or go to an existing application and launch the development console using "bud".
 
 var helpFootprint = "You can also browse informations at http://www.tbud.io.\n"
 
-// tmpl executes the given template text on data, writing the result to w.
-func tmpl(w io.Writer, text string, data interface{}) {
-	t := template.New("top")
-	t.Funcs(template.FuncMap{"trim": strings.TrimSpace, "capitalize": capitalize})
-	template.Must(t.Parse(text))
-	if err := t.Execute(w, data); err != nil {
-		panic(err)
-	}
-}
-
-func capitalize(s string) string {
-	if s == "" {
-		return s
-	}
-	r, n := utf8.DecodeRuneInString(s)
-	return string(unicode.ToTitle(r)) + s[n:]
-}
-
 func printIcon() {
 	for _, icon := range budIcon {
 		println(icon)
 	}
-}
-
-func printUsage(w io.Writer) {
-	tmpl(w, usageTemplate, Commands)
 }
 
 func runBud(args []string) {
