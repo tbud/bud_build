@@ -45,7 +45,7 @@ func init() {
 }
 
 func TestTestTask(t *testing.T) {
-	ContextConfig(Config{
+	TaskConfig("", Config{
 		CONTEXT_CONFIG_TASK_KEY: Config{
 			"context": Config{
 				"test": Config{
