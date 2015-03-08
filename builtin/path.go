@@ -1,13 +1,19 @@
 package builtin
 
 import (
-	"path/filepath"
+	"github.com/tbud/x/path/selector"
 )
 
 type Paths []string
 
 func FindFiles(pattern string) Paths {
-	matches, err := filepath.Glob(pattern)
+	s, err := selector.New(pattern)
+	if err != nil {
+		panic(err)
+	}
+
+	var matches []string
+	matches, err = s.Matches(".")
 	if err != nil {
 		panic(err)
 	}
