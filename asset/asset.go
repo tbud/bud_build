@@ -69,12 +69,17 @@ type Asset struct {
 	N   string        // save name
 	Z   []byte        // save compressed data
 	S   int           // origin file size
+	D   bool          // save is dir
 	M   os.FileMode   // file mode
 	MT  time.Time     // file mod time
 	Buf *bytes.Buffer // used by read method
 }
 
 func (a *Asset) Read(p []byte) (n int, err error) {
+	if a.IsDir() {
+		return 0, nil
+	}
+
 	if a.Buf == nil {
 		gz, err := gzip.NewReader(bytes.NewBuffer(a.Z))
 		if err != nil {
@@ -117,7 +122,7 @@ func (a *Asset) ModTime() time.Time {
 }
 
 func (a *Asset) IsDir() bool {
-	return false
+	return a.D
 }
 func (a *Asset) Sys() interface{} {
 	return nil

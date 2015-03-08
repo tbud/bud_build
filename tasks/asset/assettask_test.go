@@ -8,7 +8,7 @@ import (
 
 func TestAsset(t *testing.T) {
 	TaskConfig("bud.asset", Config{
-		"includes": []string{"*.go"},
+		"patterns": []string{"*.go"},
 		"output":   "testdata/assets.go",
 		"package":  "testdata",
 	})

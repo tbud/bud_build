@@ -7,7 +7,7 @@ import (
 	"fmt"
 	. "github.com/tbud/bud/asset"
 	. "github.com/tbud/bud/context"
-	"github.com/tbud/x/container/set"
+	"github.com/tbud/x/path/selector"
 	"io"
 	"os"
 	"path/filepath"
@@ -18,8 +18,7 @@ import (
 type AssetTask struct {
 	Package  string
 	BaseDir  string
-	Includes []string
-	Excludes []string
+	Patterns []string
 	Output   string
 	Compress bool
 
@@ -31,7 +30,7 @@ func init() {
 	var err error
 	assetTask := AssetTask{
 		Package:  "main",
-		Includes: []string{"**"},
+		Patterns: []string{"**"},
 		Output:   "./assets.go",
 		Compress: true,
 	}
@@ -85,15 +84,23 @@ func (a *AssetTask) Execute() error {
 			return err
 		}
 
-		shortFile := strings.TrimPrefix(file, a.BaseDir)[1:]
-
-		asset := Asset{
-			N:  shortFile,
-			S:  int(fi.Size()),
-			M:  fi.Mode(),
-			MT: fi.ModTime(),
+		if a.outputFilepath == file {
+			Log.Warn("files include output file: %s", file)
+			continue
 		}
-		assets = append(assets, asset)
+
+		shortFile := strings.TrimPrefix(file, a.BaseDir)
+		if len(shortFile) > 0 {
+			shortFile = shortFile[1:]
+			asset := Asset{
+				N:  shortFile,
+				D:  fi.IsDir(),
+				S:  int(fi.Size()),
+				M:  fi.Mode(),
+				MT: fi.ModTime(),
+			}
+			assets = append(assets, asset)
+		}
 	}
 
 	funcMap := template.FuncMap{
@@ -156,41 +163,22 @@ func (a *AssetTask) Validate() error {
 		return fmt.Errorf("Output path is a directory.")
 	}
 
-	fileSet := set.NewStringSet()
-	if err := checkFilePath(a.BaseDir, a.Includes, func(matches []string) error {
-		fileSet.Union(matches...)
-		return nil
-	}); err != nil {
+	if len(a.Patterns) == 0 {
+		a.Patterns = []string{"**"}
+	}
+
+	var s *selector.Selector
+	s, err = selector.New(a.Patterns...)
+	if err != nil {
 		return err
 	}
 
-	if err := checkFilePath(a.BaseDir, a.Excludes, func(matches []string) error {
-		fileSet.Subtract(matches...)
-		return nil
-	}); err != nil {
+	a.files, err = s.Matches(a.BaseDir)
+	if err != nil {
+		a.files = nil
 		return err
 	}
 
-	a.files = fileSet.ToSeq()
-	return nil
-}
-
-func checkFilePath(baseDir string, filePaths []string, fun func(matches []string) error) error {
-	for _, filePath := range filePaths {
-		var file string
-		if filepath.IsAbs(filePath) {
-			file = filePath
-		} else {
-			file = filepath.Join(baseDir, filePath)
-		}
-
-		matches, err := filepath.Glob(file)
-		if err != nil {
-			return err
-		}
-
-		return fun(matches)
-	}
 	return nil
 }
 
@@ -206,7 +194,8 @@ func init() {
 	asset.Register([]asset.Asset{
 		{{ range $asset := .assets }}{
 			N: "{{ $asset.N }}",
-			Z: []byte("{{ zipFile $asset.N $.assetTask.BaseDir | printf "%s" }}"),
+			D: {{ $asset.D }},
+			{{if not $asset.D}}Z: []byte("{{ zipFile $asset.N $.assetTask.BaseDir | printf "%s" }}"),{{end}}
 			S: {{ $asset.S }},
 			M: {{ printf "%d" $asset.M }},
 			MT : time.Unix({{ $asset.MT.Unix }}, 0),
