@@ -6,7 +6,6 @@ Task("default", func() error {
 		Printf("%v\n", events)
 		return nil
 	})
-
 	return nil
 })
 
