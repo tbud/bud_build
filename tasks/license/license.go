@@ -36,7 +36,7 @@ func (l *licenseTask) Execute() (err error) {
 			return err
 		} else {
 			if !bytes.HasPrefix(filebuf, licenseBuf) {
-				if f, err := os.Open(filename); err != nil {
+				if f, err := os.OpenFile(filename, os.O_WRONLY, 0); err != nil {
 					return err
 				} else {
 					_, err = f.WriteAt(licenseBuf, 0)
