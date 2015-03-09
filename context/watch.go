@@ -293,16 +293,17 @@ func (w *watch) addAllDir() (err error) {
 	return nil
 }
 
-func (w *watch) addAllMatches() (err error) {
-	var matches []string
-	if matches, err = w.pselector.Matches(w.baseDir); err != nil {
-		return err
-	}
+// comment add matches
+// func (w *watch) addAllMatches() (err error) {
+// 	var matches []string
+// 	if matches, err = w.pselector.Matches(w.baseDir); err != nil {
+// 		return err
+// 	}
 
-	for _, match := range matches {
-		if err = w.watcher.Add(match); err != nil {
-			return err
-		}
-	}
-	return nil
-}
+// 	for _, match := range matches {
+// 		if err = w.watcher.Add(match); err != nil {
+// 			return err
+// 		}
+// 	}
+// 	return nil
+// }
