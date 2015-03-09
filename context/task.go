@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 )
 
 type task struct {
@@ -19,6 +20,7 @@ type task struct {
 
 var _tasks = map[string]*task{}
 var _runningTask = []string{}
+var _taskRunLock = sync.Mutex{}
 
 type TasksType []string
 type Usage string
@@ -73,7 +75,19 @@ func Task(name string, args ...interface{}) {
 	}
 }
 
-func RunTask(taskName string) error {
+func RunTask(taskName string) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			if _, ok := r.(runtime.Error); ok {
+				panic(r)
+			}
+			err = r.(error)
+		}
+	}()
+
+	_taskRunLock.Lock()
+	defer _taskRunLock.Unlock()
+
 	if len(taskName) > 0 {
 		err := configTask(taskName)
 		if err != nil {

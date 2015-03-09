@@ -82,6 +82,8 @@ func main() {
 			Exit(1)
 		}
 	}
+
+	StartWatchs()
 }
 `
 
