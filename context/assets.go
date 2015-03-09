@@ -1,4 +1,4 @@
-
+// Don't edit this file, file auto modified by bud.asset.
 package context
 
 import (
