@@ -2,11 +2,11 @@ package context
 
 import (
 	"fmt"
+	. "github.com/tbud/x/builtin"
 	"github.com/tbud/x/path/selector"
 	"gopkg.in/fsnotify.v1"
 	"os"
 	"os/signal"
-	"runtime"
 	"sync"
 	"time"
 )
@@ -245,14 +245,13 @@ func (w *watch) delayDoTask(event Event) error {
 }
 
 func (w *watch) doTask(events []Event) (err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			if _, ok := r.(runtime.Error); ok {
-				panic(r)
-			}
-			err = r.(error)
+	defer Catch(func(ierr interface{}) {
+		switch value := ierr.(type) {
+		case error:
+			err = value
 		}
-	}()
+		Log.Error("Catch error: %v", ierr)
+	})
 
 	w.taskLock.Lock()
 	defer w.taskLock.Unlock()
