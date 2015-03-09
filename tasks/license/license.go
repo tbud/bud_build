@@ -39,7 +39,8 @@ func (l *licenseTask) Execute() (err error) {
 				if f, err := os.OpenFile(filename, os.O_WRONLY, 0); err != nil {
 					return err
 				} else {
-					_, err = f.WriteAt(licenseBuf, 0)
+					_, err = f.Write(licenseBuf, 0)
+					f.Write(filebuf)
 					f.Close()
 					Log.Debug("Add license to file '%s', error: %v", filename, err)
 				}
