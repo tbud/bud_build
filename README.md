@@ -1,6 +1,9 @@
 # bud
 **The golang build system use golang**
 
+## Install
+`go get github.com/tbud/bud`
+
 ## Sample `build.bud`
 
 This file is just a quick sample to give you a taste of what bud does.
@@ -42,6 +45,3 @@ In `build.bud` file add `UseTasks("bud")`, then you can run `bud clean` directly
 bud.asset - Package file into bin.
 
 bud.clean - Clean bud script run temp dir.
-
-## Install
-`go get github.com/tbud/bud`
