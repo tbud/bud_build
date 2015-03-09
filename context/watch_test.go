@@ -5,8 +5,5 @@ import (
 )
 
 func TestWatchFiles(t *testing.T) {
-
-	// Watch(WatchFiles{BaseDir: "", Patterns: []string{"*.go"}}, func() {
-
-	// })
+	// use bud to test watch
 }

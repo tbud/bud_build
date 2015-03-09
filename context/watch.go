@@ -22,7 +22,7 @@ type watch struct {
 	watcher    *fsnotify.Watcher          // watcher that watch the dir
 	exit       chan bool                  // use to graceful stop watch
 	skipOp     fsnotify.Op                // ops that will be skiped, default is Op_Chmod
-	waitMsec   time.Duration              // if wait time is 0, event will send immediately; otherwise will wait x msec,default is 10
+	waitMsec   time.Duration              // if wait time is 0, event will send immediately; otherwise will wait x msec,default is 100
 	mergeEvent bool                       // when wait msec is not 0, event will merge when path is same
 	events     []Event                    // events need to delay notify
 	eventsLock sync.Mutex                 // lock for access the events
@@ -82,7 +82,7 @@ func Watch(patterns PatternsType, args ...interface{}) {
 		}
 
 		var err error
-		w := &watch{waitMsec: 10, mergeEvent: true}
+		w := &watch{waitMsec: 100, mergeEvent: true}
 
 		for i, arg := range args {
 			switch value := arg.(type) {
