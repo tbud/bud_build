@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
-	"sync"
 )
 
 var _watchs []*watch
@@ -20,12 +19,8 @@ type watch struct {
 	tasks     []string
 	fun       func(event Event) error
 	watcher   *fsnotify.Watcher
-	lock      sync.Mutex
 	exit      chan bool
-}
-
-type Event struct {
-	fsnotify.Event
+	skipOp    fsnotify.Op
 }
 
 const (
@@ -36,8 +31,39 @@ const (
 	Op_Chmod
 )
 
+type Event struct {
+	fsnotify.Event
+}
+
+func (e *Event) IsCreate() bool {
+	return e.Op&fsnotify.Create == fsnotify.Create
+}
+
+func (e *Event) IsWrite() bool {
+	return e.Op&fsnotify.Write == fsnotify.Write
+}
+
+func (e *Event) IsRemove() bool {
+	return e.Op&fsnotify.Remove == fsnotify.Remove
+}
+
+func (e *Event) IsRename() bool {
+	return e.Op&fsnotify.Rename == fsnotify.Rename
+}
+
+func (e *Event) IsChmod() bool {
+	return e.Op&fsnotify.Chmod == fsnotify.Chmod
+}
+
 type PatternsType []string
 type BaseDir string
+
+func SkipOp(ops ...fsnotify.Op) (ret fsnotify.Op) {
+	for _, op := range ops {
+		ret |= op
+	}
+	return ret
+}
 
 func Patterns(patterns ...string) PatternsType {
 	return PatternsType(patterns)
@@ -50,12 +76,7 @@ func Watch(patterns PatternsType, args ...interface{}) {
 		}
 
 		var err error
-		w := &watch{baseDir: "."}
-
-		w.pselector, err = selector.New([]string(patterns)...)
-		if err != nil {
-			panic(fmt.Errorf("parse pattern err: %v", err))
-		}
+		w := &watch{}
 
 		for i, arg := range args {
 			switch value := arg.(type) {
@@ -65,10 +86,18 @@ func Watch(patterns PatternsType, args ...interface{}) {
 				w.fun = value
 			case TasksType:
 				w.tasks = []string(value)
+			case BaseDir:
+				w.baseDir = string(value)
+			case fsnotify.Op:
+				w.skipOp = value
 			}
 		}
 
-		if err = w.initWatcher(); err != nil {
+		if len(w.tasks) == 0 && w.fun == nil {
+			panic("watch must have related tasks or related function")
+		}
+
+		if err = w.initWatcher(patterns); err != nil {
 			panic(err)
 		}
 
@@ -86,10 +115,11 @@ func StartWatchs() (err error) {
 			}
 		}
 
-		ch := make(chan os.Signal)
-		signal.Notify(ch, os.Interrupt, os.Kill)
-		<-ch
+		st := make(chan os.Signal)
+		signal.Notify(st, os.Interrupt, os.Kill)
+		<-st
 
+		Log.Debug("Get shutdown signal.")
 		StopWatchs()
 	}
 
@@ -105,7 +135,21 @@ func StopWatchs() error {
 	return nil
 }
 
-func (w *watch) initWatcher() (err error) {
+func (w *watch) initWatcher(patterns PatternsType) (err error) {
+	if len(w.baseDir) == 0 {
+		w.baseDir = "."
+	}
+	w.exit = make(chan bool)
+
+	if w.skipOp == 0 {
+		w.skipOp = SkipOp(Op_Chmod)
+	}
+
+	w.pselector, err = selector.New([]string(patterns)...)
+	if err != nil {
+		return fmt.Errorf("parse pattern err: %v", err)
+	}
+
 	w.watcher, err = fsnotify.NewWatcher()
 	if err != nil {
 		Log.Error("%v", err)
@@ -119,18 +163,13 @@ func (w *watch) initWatcher() (err error) {
 }
 
 func (w *watch) beginWatch() (err error) {
-	// if err = w.addAllDir(); err != nil {
-	// 	return err
-	// }
-
-	var matches []string
-	if matches, err = w.pselector.Matches(w.baseDir); err != nil {
+	if err = w.addAllDir(); err != nil {
 		return err
 	}
 
-	for _, match := range matches {
-		w.watcher.Add(match)
-	}
+	// if err = w.addAllMatches(); err != nil {
+	// 	return err
+	// }
 
 	go func() {
 		for {
@@ -151,6 +190,46 @@ func (w *watch) beginWatch() (err error) {
 }
 
 func (w *watch) event(event Event) (err error) {
+	Log.Debug("get event: %v", event)
+
+	if event.Op&w.skipOp > 0 {
+		Log.Debug("Event is skiped: %v", event)
+		return nil
+	}
+
+	var bIsDir = false
+	if fi, err := os.Stat(event.Name); err != nil {
+		if !(event.IsRemove() && os.IsNotExist(err)) {
+			Log.Warn("Get stat err: %v", err)
+			return err
+		}
+	} else {
+		if fi.IsDir() {
+			if event.IsCreate() {
+				err = w.watcher.Add(event.Name)
+				Log.Debug("Add path '%s' to watcher. Error: %v", event.Name, err)
+			}
+		}
+
+		bIsDir = fi.IsDir()
+	}
+
+	var bmatch bool
+	if bmatch, err = w.pselector.Match(w.baseDir, event.Name, bIsDir); err != nil {
+		return err
+	}
+
+	if bmatch {
+		// if !bIsDir && event.IsCreate() {
+		// 	w.watcher.Add(event.Name)
+		// }
+		w.doTask(event)
+	}
+
+	return nil
+}
+
+func (w *watch) doTask(event Event) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			if _, ok := r.(runtime.Error); ok {
@@ -159,9 +238,6 @@ func (w *watch) event(event Event) (err error) {
 			err = r.(error)
 		}
 	}()
-
-	w.lock.Lock()
-	defer w.lock.Unlock()
 
 	if len(w.tasks) > 0 {
 		for _, task := range w.tasks {
@@ -195,6 +271,20 @@ func (w *watch) addAllDir() (err error) {
 
 	for _, match := range matches {
 		w.watcher.Add(match)
+	}
+	return nil
+}
+
+func (w *watch) addAllMatches() (err error) {
+	var matches []string
+	if matches, err = w.pselector.Matches(w.baseDir); err != nil {
+		return err
+	}
+
+	for _, match := range matches {
+		if err = w.watcher.Add(match); err != nil {
+			return err
+		}
 	}
 	return nil
 }

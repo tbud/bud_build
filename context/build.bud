@@ -1,10 +1,17 @@
 # for test
 
+
 Task("default", func() error {
-	Watch(Patterns("**/*.go"), func(event Event) error {
+	Watch(Patterns("**/*.go"), Tasks("tt1"), func(event Event) error {
 		Printf("%v\n", event)
 		return nil
 	})
-	
+
+	return nil
+})
+
+
+Task("tt1", func() error {
+	Println("Hello world!")
 	return nil
 })
