@@ -41,9 +41,7 @@ func (l *licenseTask) Execute() (err error) {
 				} else {
 					_, err = f.WriteAt(licenseBuf, 0)
 					f.Close()
-					if err != nil {
-						return err
-					}
+					Log.Debug("Add license to file '%s', error: %v", filename, err)
 				}
 			}
 		}
