@@ -11,7 +11,7 @@ import (
 type task struct {
 	name      string
 	groupName string
-	depends   []string
+	tasks     []string
 	executor  Executor
 	config    config.Config
 	usageLine string
@@ -20,18 +20,18 @@ type task struct {
 var _tasks = map[string]*task{}
 var _runningTask = []string{}
 
-type Depends []string
+type TasksType []string
 type Usage string
 type Group string
 
-func Depend(tasks ...string) Depends {
-	return Depends(tasks)
+func Tasks(tasks ...string) TasksType {
+	return TasksType(tasks)
 }
 
 func Task(name string, args ...interface{}) {
 	if len(name) > 0 {
 		if len(args) == 0 {
-			panic("task must have dependence or executor function")
+			panic("task must have dependence tasks or executor function")
 		}
 
 		t := task{name: name}
@@ -39,8 +39,8 @@ func Task(name string, args ...interface{}) {
 			switch value := arg.(type) {
 			default:
 				panic(fmt.Errorf("unknown args at arg[%d].", i+1))
-			case Depends:
-				t.depends = []string(value)
+			case TasksType:
+				t.tasks = []string(value)
 			case Usage:
 				t.usageLine = string(value)
 			case Group:
@@ -184,8 +184,8 @@ func walkTask(taskName string, doTask func(t *task) error) error {
 	defer popTask()
 
 	if task, exist := _tasks[taskName]; exist {
-		if len(task.depends) > 0 {
-			for _, depTask := range task.depends {
+		if len(task.tasks) > 0 {
+			for _, depTask := range task.tasks {
 				err := walkTask(depTask, doTask)
 				if err != nil {
 					return err

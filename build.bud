@@ -2,15 +2,15 @@
 
 # config asset plugin
 TaskConfig("bud.asset", Config{
-		"includes": []string{"bud.conf"},
+		"patterns": []string{"bud.conf"},
 		"output":   "context/assets.go",
 		"package": "context",
 })
 
 UseTasks("bud")
 
-Task("build", Depend("asset"), func() error {
+Task("build", Tasks("asset"), func() error {
 	return Exec("go", "get", "github.com/tbud/bud")
 })
 
-Task("default", Depend("build"))
+Task("default", Tasks("build"))

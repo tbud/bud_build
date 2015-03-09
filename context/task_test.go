@@ -37,7 +37,7 @@ func init() {
 		return nil
 	})
 
-	Task("B1", Depend("A1"), func() error {
+	Task("B1", Tasks("A1"), func() error {
 		return nil
 	})
 
@@ -77,10 +77,10 @@ func BenchmarkTaskRun(b *testing.B) {
 	}
 }
 
-func TestDepends(t *testing.T) {
-	dep := Depend("a", "b", "c")
+func TestTasks(t *testing.T) {
+	dep := Tasks("a", "b", "c")
 	got := []string{"a", "b", "c"}
-	if !reflect.DeepEqual(dep, Depends(got)) {
+	if !reflect.DeepEqual(dep, TasksType(got)) {
 		t.Errorf("want %v, got %v", dep, got)
 	}
 }
@@ -91,7 +91,7 @@ func TestTask(t *testing.T) {
 		return nil
 	})
 
-	Task("B", Depend("A"), func() error {
+	Task("B", Tasks("A"), func() error {
 		fmt.Println("in B")
 		return nil
 	})
