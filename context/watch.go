@@ -7,20 +7,26 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"sync"
+	"time"
 )
 
 var _watchs []*watch
 var stopWatch chan bool
 
 type watch struct {
-	// watchFiles WatchFiles
-	baseDir   string
-	pselector *selector.Selector
-	tasks     []string
-	fun       func(event Event) error
-	watcher   *fsnotify.Watcher
-	exit      chan bool
-	skipOp    fsnotify.Op
+	baseDir    string
+	pselector  *selector.Selector
+	tasks      []string                   // run task when event notify
+	fun        func(events []Event) error // run when event notify
+	watcher    *fsnotify.Watcher          // watcher that watch the dir
+	exit       chan bool                  // use to graceful stop watch
+	skipOp     fsnotify.Op                // ops that will be skiped, default is Op_Chmod
+	waitMsec   time.Duration              // if wait time is 0, event will send immediately; otherwise will wait x msec,default is 10
+	mergeEvent bool                       // when wait msec is not 0, event will merge when path is same
+	events     []Event                    // events need to delay notify
+	eventsLock sync.Mutex                 // lock for access the events
+	taskLock   sync.Mutex                 // lock for run task
 }
 
 const (
@@ -76,13 +82,13 @@ func Watch(patterns PatternsType, args ...interface{}) {
 		}
 
 		var err error
-		w := &watch{}
+		w := &watch{waitMsec: 10, mergeEvent: true}
 
 		for i, arg := range args {
 			switch value := arg.(type) {
 			default:
 				panic(fmt.Errorf("unknown args at arg[%d].", i+1))
-			case func(event Event) error:
+			case func(events []Event) error:
 				w.fun = value
 			case TasksType:
 				w.tasks = []string(value)
@@ -167,6 +173,7 @@ func (w *watch) beginWatch() (err error) {
 		return err
 	}
 
+	// comment add matches
 	// if err = w.addAllMatches(); err != nil {
 	// 	return err
 	// }
@@ -190,10 +197,10 @@ func (w *watch) beginWatch() (err error) {
 }
 
 func (w *watch) event(event Event) (err error) {
-	Log.Debug("get event: %v", event)
+	Log.Trace("get event: %v", event)
 
 	if event.Op&w.skipOp > 0 {
-		Log.Debug("Event is skiped: %v", event)
+		Log.Trace("Event is skiped: %v", event)
 		return nil
 	}
 
@@ -220,16 +227,56 @@ func (w *watch) event(event Event) (err error) {
 	}
 
 	if bmatch {
+		// comment add matches
 		// if !bIsDir && event.IsCreate() {
 		// 	w.watcher.Add(event.Name)
 		// }
-		w.doTask(event)
+		if w.waitMsec == 0 {
+			if err = w.doTask([]Event{event}); err != nil {
+				Log.Warn("do task error: %v", err)
+				return err
+			}
+		} else {
+			if err = w.delayDoTask(event); err != nil {
+				Log.Warn("delay task error: %v", err)
+				return err
+			}
+		}
 	}
 
 	return nil
 }
 
-func (w *watch) doTask(event Event) (err error) {
+func (w *watch) delayDoTask(event Event) error {
+	w.eventsLock.Lock()
+	defer w.eventsLock.Unlock()
+
+	if len(w.events) == 0 {
+		go func() {
+			time.Sleep(w.waitMsec * time.Millisecond)
+			var e []Event
+			w.eventsLock.Lock()
+			e = w.events
+			w.events = w.events[:0]
+			w.eventsLock.Unlock()
+			w.doTask(e)
+		}()
+	}
+
+	if w.mergeEvent {
+		for i, evn := range w.events {
+			if evn.Name == event.Name {
+				w.events[i].Op |= event.Op
+				return nil
+			}
+		}
+	}
+
+	w.events = append(w.events, event)
+	return nil
+}
+
+func (w *watch) doTask(events []Event) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			if _, ok := r.(runtime.Error); ok {
@@ -238,6 +285,9 @@ func (w *watch) doTask(event Event) (err error) {
 			err = r.(error)
 		}
 	}()
+
+	w.taskLock.Lock()
+	defer w.taskLock.Unlock()
 
 	if len(w.tasks) > 0 {
 		for _, task := range w.tasks {
@@ -248,7 +298,7 @@ func (w *watch) doTask(event Event) (err error) {
 	}
 
 	if w.fun != nil {
-		if err = w.fun(event); err != nil {
+		if err = w.fun(events); err != nil {
 			return err
 		}
 	}

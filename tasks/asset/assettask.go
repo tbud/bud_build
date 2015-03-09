@@ -182,7 +182,7 @@ func (a *AssetTask) Validate() error {
 	return nil
 }
 
-const assetTemplate = `
+const assetTemplate = `// Don'nt edit this file, file auto modified by bud.asset.
 package {{ .assetTask.Package }}
 
 import (

@@ -2,8 +2,8 @@
 
 
 Task("default", func() error {
-	Watch(Patterns("**/*.go"), Tasks("tt1"), func(event Event) error {
-		Printf("%v\n", event)
+	Watch(Patterns("**/*.go"), Tasks("tt1"), func(events []Event) error {
+		Printf("%v\n", events)
 		return nil
 	})
 
