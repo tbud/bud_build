@@ -1,5 +1,5 @@
 # bud
-**The build system use golang**
+**The golang build system use golang**
 
 ## Sample `build.bud`
 
@@ -30,14 +30,15 @@ Task("default", func() error {
 })
 ```
 
-The first line `#!/usr/bin/env bud` is option. You can add is, if you want use ./build.bud to run bud default.
+The first line `#!/usr/bin/env bud` is option. You can use it, if you want use `./build.bud` to run bud command.
 
-All tasks have a group name and a task name. You can run task give it group name and task name connect with a dot, for example:
+All tasks have a group name and a task name. You can run task with group name and task name, for example:
 `bud bud.clean` will run bud.clean task to clean bud script run temp dirs.
 
-`UseTasks` will create a link to real task use, then you can direct run task only use task name, for example:
-In build.bud file add `UseTasks("bud")`, then you can run `bud clean` directly.
+`UseTasks` will use task name to create link to real task, then you can direct run task only use task name, for example:
+In `build.bud` file add `UseTasks("bud")`, then you can run `bud clean` directly.
 
 ## Supported tasks
 bud.asset - Package file into bin.
+
 bud.clean - Clean bud script run temp dir.
