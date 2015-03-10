@@ -19,18 +19,21 @@ var _watchs []*watch
 var stopWatch chan bool
 
 type watch struct {
+	// option param
 	baseDir    string
 	pselector  *selector.Selector
 	tasks      []string                   // run task when event notify
 	fun        func(events []Event) error // run when event notify
-	watcher    *fsnotify.Watcher          // watcher that watch the dir
-	exit       chan bool                  // use to graceful stop watch
 	skipOp     fsnotify.Op                // ops that will be skiped, default is Op_Chmod
 	waitMsec   time.Duration              // if wait time is 0, event will send immediately; otherwise will wait x msec,default is 100
 	mergeEvent bool                       // when wait msec is not 0, event will merge when path is same
-	events     []Event                    // events need to delay notify
-	eventsLock sync.Mutex                 // lock for access the events
-	taskLock   sync.Mutex                 // lock for run task
+
+	// use inside
+	watcher    *fsnotify.Watcher // watcher that watch the dir
+	exit       chan bool         // use to graceful stop watch
+	events     []Event           // events need to delay notify
+	eventsLock sync.Mutex        // lock for access the events
+	taskLock   sync.Mutex        // lock for run task
 }
 
 type PatternsType []string

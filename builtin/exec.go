@@ -11,13 +11,6 @@ import (
 )
 
 func Exec(name string, args ...string) (err error) {
-	if !filepath.IsAbs(name) {
-		name, err = exec.LookPath(name)
-		if err != nil {
-			return
-		}
-	}
-
 	cmd := exec.Command(name, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
