@@ -45,3 +45,23 @@ In `build.bud` file add `UseTasks("bud")`, then you can run `bud clean` directly
 bud.asset - Package file into bin.
 
 bud.clean - Clean bud script run temp dir.
+
+## need golang feature
+```golang
+	Task("A2", Tasks("C2"), func() error {
+		fmt.Println("in A")
+		return RunTask("C2")
+	})
+
+	Task("B2", Tasks("A2"), func() error {
+		fmt.Println("in B")
+		return nil
+	})
+
+	Task("C2", Tasks("B2"), func() error {
+		fmt.Println("in C")
+		return nil
+	})
+})
+```
+If use `RunTask` in `Task`, and if there exist a recursive call, the `RunTask` method will dead lock. I nead a recursive locking or goroutine id to skip or detect this situation. But both of them not support, so be careful.
