@@ -61,7 +61,7 @@ func TaskConfig(key string, value interface{}) error {
 	if len(key) > 0 {
 		key = fmt.Sprintf("%s.%s", CONTEXT_CONFIG_TASK_KEY, key)
 	} else {
-		key = CONTEXT_CONFIG_TASK_KEY
+		return fmt.Errorf("key is empty")
 	}
 	return ContextConfig.Merge(key, value)
 }

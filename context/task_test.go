@@ -23,15 +23,16 @@ type testTask struct {
 }
 
 func (t *testTask) Execute() error {
-	fmt.Println(t)
+	fmt.Printf("Ok")
 	return nil
 }
 
 func (t *testTask) Validate() error {
-	if t.Num != 3 || t.Package != "pkg" || t.BaseDir != "bb" || t.Float1 != 1.18 ||
+	if t.Num != 4 || t.Package != "pkg" || t.BaseDir != "dd" || t.Float1 != 1980.01 ||
+		t.Compress != true ||
 		!reflect.DeepEqual(t.Excludes, []string{"1", "2", "3"}) ||
-		!reflect.DeepEqual(t.Includes, []string{"resource/**/*.go", "temp/**/*.tmpl"}) {
-		return fmt.Errorf("there are task config set error")
+		!reflect.DeepEqual(t.Includes, []string{"resource/**/*.go"}) {
+		return fmt.Errorf("there are task config set error.%#v\n", t)
 	}
 	return nil
 }
@@ -49,30 +50,32 @@ func init() {
 }
 
 func TestTestTask(t *testing.T) {
-	TaskConfig("", Config{
-		CONTEXT_CONFIG_TASK_KEY: Config{
-			"context": Config{
-				"test": Config{
-					"package":  "pkg",
-					"num":      4,
-					"test":     1,
-					"float1":   1.18,
-					"includes": []string{"resource/**/*.go"},
-					"excludes": []string{"1", "2", "3"},
-				},
-			},
-		},
-	})
-
-	Task("test", &testTask{}, Config{
+	Task("test", &testTask{}, Group("tasktest"), Config{
 		"baseDir":  "bb",
 		"compress": true,
 		"num":      3,
 		"includes": []string{"resource/**/*.go", "temp/**/*.tmpl"},
 	})
-	UseTasks()
 
-	RunTask("test")
+	TaskConfig("tasktest.test", Config{
+		"package":  "pkg",
+		"num":      4,
+		"test":     1,
+		"float1":   1.18,
+		"includes": []string{"resource/**/*.go"},
+		"excludes": []string{"1", "2", "3"},
+	})
+
+	TaskConfig("tasktest", Config{
+		"baseDir": "dd",
+		"num":     5,
+	})
+
+	UseTasks("tasktest")
+
+	if err := RunTask("test", Config{"float1": 1980.01}); err != nil {
+		t.Error(err)
+	}
 }
 
 func BenchmarkTaskRun(b *testing.B) {
