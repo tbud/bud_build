@@ -46,7 +46,7 @@ bud.asset - Package file into bin.
 
 bud.clean - Clean bud script run temp dir.
 
-## need golang feature
+## BE CAREFUL -- need golang feature
 ```golang
 	Task("A2", Tasks("C2"), func() error {
 		fmt.Println("in A")
