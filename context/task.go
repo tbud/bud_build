@@ -15,17 +15,16 @@ import (
 )
 
 type task struct {
-	name      string   // task name
-	groupName string   // task group name
-	tasks     []string // dependence tasks
-	executor  Executor // if isn't nil, will execute after all dependence task called.
-	config    Config   // task default config
-	usageLine string   // usage info
+	name      string     // task name
+	groupName string     // task group name
+	tasks     []string   // dependence tasks
+	executor  Executor   // if isn't nil, will execute after all dependence task called.
+	config    Config     // task default config
+	usageLine string     // usage info
+	lock      sync.Mutex // task lock
 }
 
 var _tasks = map[string]*task{}
-var _runningTask = []string{}
-var _taskRunLock = sync.Mutex{}
 
 type TasksType []string
 type Usage string
@@ -98,23 +97,31 @@ func RunTask(taskName string, config ...Config) (err error) {
 		conf = config[0]
 	}
 
-	// lock task run
-	_taskRunLock.Lock()
-	defer _taskRunLock.Unlock()
-	initTaskStack()
-
 	if len(taskName) > 0 {
-		err := configTask(taskName, conf)
-		if err != nil {
-			return err
+		tt, exist := _tasks[taskName]
+		if !exist {
+			return fmt.Errorf("Could not find task: %s", taskName)
 		}
 
-		err = checkTaskValidate(taskName)
-		if err != nil {
-			return err
-		}
+		var ts = &taskStack{}
+		return walkTask(ts, _tasks, taskName, func(t *task) error {
+			if tt == t {
+				err = configTask(t, conf)
+			} else {
+				err = configTask(t, nil)
+			}
 
-		return executeTask(taskName)
+			if err != nil {
+				return err
+			}
+
+			err = checkTaskValidate(t)
+			if err != nil {
+				return err
+			}
+
+			return executeTask(t)
+		})
 	} else {
 		return fmt.Errorf("task name is empty")
 	}
@@ -127,34 +134,6 @@ func UseTasks(groupNames ...string) {
 		for _, groupName := range groupNames {
 			setTaskToDefault(groupName)
 		}
-	}
-}
-
-func initTaskStack() {
-	if len(_runningTask) > 0 {
-		Log.Error("task stack is not empty: %#v", _runningTask)
-
-		_runningTask = _runningTask[:0]
-	}
-}
-
-func pushTask(taskName string) error {
-	if len(_runningTask) == 0 {
-		_runningTask = append(_runningTask, taskName)
-	} else {
-		for _, t := range _runningTask {
-			if t == taskName {
-				return fmt.Errorf("Already run task: %s, there is a recursion call. Call sequence:%v", t, _runningTask)
-			}
-		}
-		_runningTask = append(_runningTask, taskName)
-	}
-	return nil
-}
-
-func popTask() {
-	if len(_runningTask) > 0 {
-		_runningTask = _runningTask[:len(_runningTask)-1]
 	}
 }
 
@@ -175,78 +154,75 @@ func getTaskDefaultGroupName() string {
 	return baseDir
 }
 
-func configTask(taskName string, config Config) (err error) {
-	return walkTask(taskName, func(t *task) error {
-		if t.executor != nil {
-			// task default config is the first config layer
-			if t.config != nil {
-				if err = t.config.SetStruct(t.executor); err != nil {
-					return err
-				}
+func configTask(t *task, config Config) (err error) {
+	if t.executor != nil {
+		// task default config is the first config layer
+		if t.config != nil {
+			if err = t.config.SetStruct(t.executor); err != nil {
+				return err
 			}
+		}
 
-			// context group config is the second config layer
-			conf := ContextConfig.SubConfig(CONTEXT_CONFIG_TASK_KEY).SubConfig(t.groupName)
-			if conf != nil {
-				if err = conf.SetStruct(t.executor); err != nil {
-					return err
-				} else {
-					// context task config is the third config layer
-					conf = conf.SubConfig(t.name)
-					if conf != nil {
-						if err = conf.SetStruct(t.executor); err != nil {
-							return err
-						}
+		// context group config is the second config layer
+		conf := ContextConfig.SubConfig(CONTEXT_CONFIG_TASK_KEY).SubConfig(t.groupName)
+		if conf != nil {
+			if err = conf.SetStruct(t.executor); err != nil {
+				return err
+			} else {
+				// context task config is the third config layer
+				conf = conf.SubConfig(t.name)
+				if conf != nil {
+					if err = conf.SetStruct(t.executor); err != nil {
+						return err
 					}
 				}
 			}
+		}
 
-			// run task config is the last config layer
-			if config != nil {
-				return config.SetStruct(t.executor)
-			}
-			return nil
+		// run task config is the last config layer
+		if config != nil {
+			return config.SetStruct(t.executor)
 		}
 		return nil
-	})
+	}
+	return nil
 }
 
-func checkTaskValidate(taskName string) error {
-	return walkTask(taskName, func(t *task) error {
-		if t.executor != nil {
-			return t.executor.Validate()
-		}
-		return nil
-	})
+func checkTaskValidate(t *task) error {
+	if t.executor != nil {
+		return t.executor.Validate()
+	}
+	return nil
 }
 
-func executeTask(taskName string) error {
-	return walkTask(taskName, func(t *task) error {
-		if t.executor != nil {
-			Log.Debug("execute task '%s'.\nexecutor: %+v", t.name, t.executor)
-			return t.executor.Execute()
-		}
-		return nil
-	})
+func executeTask(t *task) error {
+	if t.executor != nil {
+		Log.Debug("execute task '%s'.\nexecutor: %+v", t.name, t.executor)
+		return t.executor.Execute()
+	}
+	return nil
 }
 
-func walkTask(taskName string, doTask func(t *task) error) error {
-	err := pushTask(taskName)
+func walkTask(ts *taskStack, tasks map[string]*task, taskName string, doTask func(t *task) error) (err error) {
+	err = ts.pushTask(taskName)
 	if err != nil {
 		return err
 	}
-	defer popTask()
+	defer ts.popTask()
 
-	if task, exist := _tasks[taskName]; exist {
+	if task, exist := tasks[taskName]; exist {
 		if len(task.tasks) > 0 {
 			for _, depTask := range task.tasks {
-				err := walkTask(depTask, doTask)
+				err := walkTask(ts, tasks, depTask, doTask)
 				if err != nil {
 					return err
 				}
 			}
 		}
 
+		Log.Debug("pre do task '%s.%s'", task.groupName, task.name)
+		task.lock.Lock()
+		defer task.lock.Unlock()
 		return doTask(task)
 	} else {
 		return fmt.Errorf("Could not find task: %s", taskName)
@@ -261,5 +237,28 @@ func setTaskToDefault(groupName string) {
 			name := taskName[packagePrefixLen:]
 			_tasks[name] = task
 		}
+	}
+}
+
+/*********** task stack *************/
+type taskStack []string
+
+func (ts *taskStack) pushTask(taskName string) error {
+	if len(*ts) == 0 {
+		*ts = append(*ts, taskName)
+	} else {
+		for _, t := range *ts {
+			if t == taskName {
+				return fmt.Errorf("Already run task: %s, there is a recursion call. Call sequence:%v", t, ts)
+			}
+		}
+		*ts = append(*ts, taskName)
+	}
+	return nil
+}
+
+func (t taskStack) popTask() {
+	if len(t) > 0 {
+		t = t[:len(t)-1]
 	}
 }

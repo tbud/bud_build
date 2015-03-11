@@ -7,7 +7,6 @@ package builtin
 import (
 	"os"
 	"os/exec"
-	"path/filepath"
 )
 
 func Exec(name string, args ...string) (err error) {

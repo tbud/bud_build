@@ -8,6 +8,7 @@ import (
 	"fmt"
 	. "github.com/tbud/x/config"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -107,6 +108,30 @@ func TestTask(t *testing.T) {
 
 	err := RunTask("B")
 	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestTaskRecursion(t *testing.T) {
+	Task("A2", Tasks("C2"), func() error {
+		fmt.Println("in A")
+		return nil
+	})
+
+	Task("B2", Tasks("A2"), func() error {
+		fmt.Println("in B")
+		return nil
+	})
+
+	Task("C2", Tasks("B2"), func() error {
+		fmt.Println("in B")
+		return nil
+	})
+
+	UseTasks()
+
+	err := RunTask("C2")
+	if err == nil || !strings.Contains(err.Error(), "recursion call") {
 		t.Error(err)
 	}
 }
