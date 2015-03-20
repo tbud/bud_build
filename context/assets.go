@@ -1,8 +1,4 @@
-// Copyright (c) 2015, tbud. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
-
-// Don't edit this file, file auto modified by bud.asset.
+// GENERATED CODE - DO NOT EDIT
 package context
 
 import (

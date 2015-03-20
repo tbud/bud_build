@@ -86,8 +86,9 @@ func main() {
 			Exit(1)
 		}
 	}
-
+	Log.Info("1111")
 	StartWatchs()
+	Log.Info("222")
 }
 `
 
@@ -189,11 +190,14 @@ func RunScript(script string, debug bool, data interface{}, args ...string) erro
 	}
 
 	// println(time.Now().UnixNano() - timeB.UnixNano())
-
+	println("in run script0:")
 	err = builtin.Exec(scriptExe, args...)
+	println("exit run script1:", err)
 	if err != nil {
 		return err
 	}
+
+	println("exit run script")
 
 	return nil
 }
