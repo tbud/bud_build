@@ -150,7 +150,7 @@ func stateBegin(s *scriptScanner, c int) int {
 func stateParseLine(s *scriptScanner, c int) int {
 	if s.bufType == bufInUnknown {
 		switch c {
-		case ' ':
+		case ' ', '\t':
 			keywords.checkKeyword(s, s.parseBuf)
 			return scanAppendBuf
 		case '"':
