@@ -62,14 +62,9 @@ func init() {
 }
 
 const (
-	// Continue.
-	scanContinue  = iota // uninteresting byte
-	scanSkipSpace        // space byte; can skip; known to be last "continue" result
+	scanContinue  = iota // Continue, uninteresting byte
 	scanAppendBuf        // byte need to append buf
-
-	// Stop.
-	scanEnd   // top-level value ended *before* this byte; known to be first "stop" result
-	scanError // hit an error, scanner.err.
+	scanError            // hit an error, scanner.err.
 )
 
 type scriptScanner struct {
@@ -139,7 +134,7 @@ func (s *scriptScanner) checkValid(fileName string) (err error) {
 
 func stateBegin(s *scriptScanner, c int) int {
 	if c <= ' ' && isSpace(rune(c)) {
-		return scanSkipSpace
+		return scanContinue
 	}
 
 	switch c {
