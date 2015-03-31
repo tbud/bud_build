@@ -41,6 +41,7 @@ func Register(assets []Asset) {
 	}
 }
 
+// TODO when release, not open file in disk for security reason
 func Open(name string) (rc io.ReadCloser, err error) {
 	if len(name) == 0 {
 		return nil, fmt.Errorf("asset open file name empty")

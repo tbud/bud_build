@@ -11,7 +11,6 @@ import (
 	"github.com/tbud/x/log"
 	"io"
 	"os"
-	"os/user"
 	"path"
 )
 
@@ -26,11 +25,14 @@ var (
 )
 
 func init() {
-	var err error
+	var (
+		homeDir string
+		err     error
+	)
 	Log, err = log.New(nil)
 
-	currentUser, uerr := user.Current()
-	ExitIfError(uerr)
+	homeDir, err = HomeDir()
+	ExitIfError(err)
 
 	// get bud.conf from asset
 	var reader io.ReadCloser
@@ -41,7 +43,7 @@ func init() {
 	reader.Close()
 
 	// init config
-	budConf := path.Join(currentUser.HomeDir, ".bud")
+	budConf := path.Join(homeDir, ".bud")
 	if _, ferr := os.Stat(budConf); !os.IsNotExist(ferr) {
 		var contextConfig config.Config
 		contextConfig, err = config.Load(budConf)

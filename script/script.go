@@ -164,6 +164,33 @@ func printScriptWithLineNumber(script string) {
 	}
 }
 
+// used by dist task
+func GenScript(budScriptFileName string, destFileName string, debug bool) (err error) {
+	scan := scriptScanner{}
+	err = scan.checkValid(budScriptFileName)
+	if err != nil {
+		return err
+	}
+
+	scriptBuf, err := genScriptBufFromTemplate(scriptTemplate, debug, scan)
+	if err != nil {
+		return err
+	}
+
+	if !filepath.IsAbs(destFileName) {
+		if destFileName, err = filepath.Abs(destFileName); err != nil {
+			return err
+		}
+	}
+
+	destDir := filepath.Dir(destFileName)
+	if err = os.MkdirAll(destDir, 0700); err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(destFileName, scriptBuf, 0600)
+}
+
 func RunScript(script string, debug bool, data interface{}, args ...string) error {
 	scriptBuf, err := genScriptBufFromTemplate(script, debug, data)
 	if err != nil {
