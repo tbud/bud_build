@@ -13,7 +13,7 @@ import (
 	"os"
 )
 
-type licenseTask struct {
+type LicenseTask struct {
 	BaseDir     string
 	Patterns    []string
 	LicenseHead string
@@ -22,7 +22,7 @@ type licenseTask struct {
 }
 
 func init() {
-	license := &licenseTask{
+	license := &LicenseTask{
 		Patterns: []string{"**/*.go"},
 		LicenseHead: `// Copyright (c) 2015, tbud. All rights reserved.
 // Use of this source code is governed by a BSD-style
@@ -33,7 +33,7 @@ func init() {
 	Task("license", BUD_TASK_GROUP, license, Usage("Add license head to files."))
 }
 
-func (l *licenseTask) Execute() (err error) {
+func (l *LicenseTask) Execute() (err error) {
 	licenseBuf := []byte(l.LicenseHead)
 	for _, filename := range l.files {
 		if filebuf, err := ioutil.ReadFile(filename); err != nil {
@@ -54,7 +54,7 @@ func (l *licenseTask) Execute() (err error) {
 	return nil
 }
 
-func (l *licenseTask) Validate() (err error) {
+func (l *LicenseTask) Validate() (err error) {
 	if len(l.BaseDir) == 0 {
 		if l.BaseDir, err = os.Getwd(); err != nil {
 			return err
