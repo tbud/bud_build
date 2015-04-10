@@ -7,9 +7,8 @@ package seed
 import (
 	"fmt"
 	. "github.com/tbud/bud/context"
-	"io"
+	"github.com/tbud/x/io/ioutil"
 	"os"
-	"path/filepath"
 	"strings"
 	"text/template"
 )
@@ -35,61 +34,17 @@ func CreateArchetype(destDir, srcDir string, data interface{}) error {
 		}
 	}
 
-	if err = os.MkdirAll(destDir, 0777); err != nil {
-		Log.Error("%v", err)
-		return fmt.Errorf("Failed to create directory: %s", destDir)
-	}
-
-	err = filepath.Walk(archetypeDir, func(path string, info os.FileInfo, err error) error {
-		relSrcPath := strings.TrimLeft(path[len(archetypeDir):], string(os.PathSeparator))
-		destPath := filepath.Join(destDir, relSrcPath)
-
-		if strings.HasPrefix(relSrcPath, ".") {
-			if info.IsDir() {
-				return filepath.SkipDir
-			}
+	err = ioutil.Copy(destDir, archetypeDir, 0, func(dest, src string, srcInfo os.FileInfo) (skiped bool, err error) {
+		if !srcInfo.IsDir() && strings.HasSuffix(src, Seed_Template_Suffix) {
+			return true, copyTemplateFile(dest[:len(dest)-len(Seed_Template_Suffix)], src, data)
 		}
-
-		if info.IsDir() {
-			err = os.MkdirAll(destPath, 0777)
-			if !os.IsNotExist(err) {
-				return err
-			}
-			return nil
-		}
-
-		if strings.HasSuffix(relSrcPath, Seed_Template_Suffix) {
-			return copyTemplateFile(destPath[:len(destPath)-len(Seed_Template_Suffix)], path, data)
-		}
-
-		return copyFile(destPath, path)
+		return false, nil
 	})
 
 	if err != nil {
 		Log.Error("%v", err)
 	}
 	return err
-}
-
-func copyFile(destFile, srcFile string) (err error) {
-	var dst, src *os.File
-	if dst, err = os.Create(destFile); err != nil {
-		return
-	}
-
-	if src, err = os.Open(srcFile); err != nil {
-		return
-	}
-
-	if _, err = io.Copy(dst, src); err != nil {
-		return
-	}
-
-	if err = src.Close(); err != nil {
-		return
-	}
-
-	return dst.Close()
 }
 
 func copyTemplateFile(destFile, srcFile string, data interface{}) (err error) {
