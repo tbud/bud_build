@@ -14,6 +14,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -203,6 +204,12 @@ func RunScript(script string, debug bool, data interface{}, args ...string) erro
 		return err
 	}
 	if !debug {
+		go func() {
+			st := make(chan os.Signal)
+			signal.Notify(st, os.Interrupt, os.Kill)
+			<-st
+			os.RemoveAll(tempDir)
+		}()
 		defer os.RemoveAll(tempDir)
 	}
 
