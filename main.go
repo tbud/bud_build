@@ -6,14 +6,15 @@ package main
 
 import (
 	"fmt"
-	. "github.com/tbud/bud/context"
-	"github.com/tbud/bud/script"
-	"github.com/tbud/bud/seed"
 	"go/build"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	. "github.com/tbud/bud/context"
+	"github.com/tbud/bud/script"
+	"github.com/tbud/bud/seed"
 )
 
 func main() {
