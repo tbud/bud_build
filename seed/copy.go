@@ -6,11 +6,12 @@ package seed
 
 import (
 	"fmt"
-	. "github.com/tbud/bud/context"
-	"github.com/tbud/x/io/ioutil"
 	"os"
 	"strings"
 	"text/template"
+
+	. "github.com/tbud/bud/context"
+	"github.com/tbud/x/io/ioutil"
 )
 
 func CreateArchetype(destDir, srcDir string, data interface{}) error {

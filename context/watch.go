@@ -6,13 +6,14 @@ package context
 
 import (
 	"fmt"
-	. "github.com/tbud/x/builtin"
-	"github.com/tbud/x/path/selector"
-	"gopkg.in/fsnotify.v1"
 	"os"
 	"os/signal"
 	"sync"
 	"time"
+
+	. "github.com/tbud/x/builtin"
+	"github.com/tbud/x/path/selector"
+	"gopkg.in/fsnotify.v1"
 )
 
 var _watchs []*watch

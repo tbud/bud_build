@@ -6,10 +6,11 @@ package context
 
 import (
 	"fmt"
-	. "github.com/tbud/x/config"
 	"reflect"
 	"strings"
 	"testing"
+
+	. "github.com/tbud/x/config"
 )
 
 type testTask struct {

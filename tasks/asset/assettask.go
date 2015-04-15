@@ -9,14 +9,15 @@ import (
 	"bytes"
 	"compress/gzip"
 	"fmt"
-	. "github.com/tbud/bud/asset"
-	. "github.com/tbud/bud/context"
-	"github.com/tbud/x/path/selector"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	. "github.com/tbud/bud/asset"
+	. "github.com/tbud/bud/context"
+	"github.com/tbud/x/path/selector"
 )
 
 type AssetTask struct {

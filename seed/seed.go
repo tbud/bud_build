@@ -7,9 +7,10 @@ package seed
 import (
 	"bufio"
 	"fmt"
+	"os"
+
 	. "github.com/tbud/bud/context"
 	"github.com/tbud/bud/script"
-	"os"
 )
 
 const Seed_Template_Suffix = ".seedtemplate"

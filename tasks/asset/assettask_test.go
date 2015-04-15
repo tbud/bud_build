@@ -5,9 +5,10 @@
 package asset
 
 import (
+	"testing"
+
 	. "github.com/tbud/bud/context"
 	. "github.com/tbud/x/config"
-	"testing"
 )
 
 func TestAsset(t *testing.T) {

@@ -2,10 +2,11 @@ package dist
 
 import (
 	"fmt"
+	"path/filepath"
+
 	. "github.com/tbud/bud/builtin"
 	. "github.com/tbud/bud/context"
 	"github.com/tbud/bud/script"
-	"path/filepath"
 )
 
 type DistTask struct {

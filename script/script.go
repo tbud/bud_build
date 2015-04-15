@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"github.com/tbud/bud/builtin"
 	"go/format"
 	"io/ioutil"
 	"math"
@@ -19,6 +18,8 @@ import (
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/tbud/bud/builtin"
 )
 
 const scriptTemplate = `

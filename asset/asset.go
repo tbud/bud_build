@@ -8,10 +8,11 @@ import (
 	"bytes"
 	"compress/gzip"
 	"fmt"
-	"github.com/tbud/x/log"
 	"io"
 	"os"
 	"time"
+
+	"github.com/tbud/x/log"
 )
 
 var _assets = map[string]Asset{}

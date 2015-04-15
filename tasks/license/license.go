@@ -7,10 +7,11 @@ package license
 import (
 	"bytes"
 	"errors"
-	. "github.com/tbud/bud/context"
-	"github.com/tbud/x/path/selector"
 	"io/ioutil"
 	"os"
+
+	. "github.com/tbud/bud/context"
+	"github.com/tbud/x/path/selector"
 )
 
 type LicenseTask struct {

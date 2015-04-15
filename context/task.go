@@ -6,12 +6,13 @@ package context
 
 import (
 	"fmt"
-	. "github.com/tbud/x/builtin"
-	. "github.com/tbud/x/config"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
+
+	. "github.com/tbud/x/builtin"
+	. "github.com/tbud/x/config"
 )
 
 type task struct {

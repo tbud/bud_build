@@ -5,12 +5,13 @@
 package tasks
 
 import (
+	"os"
+
 	. "github.com/tbud/bud/builtin"
 	. "github.com/tbud/bud/context"
 	_ "github.com/tbud/bud/tasks/asset"
 	_ "github.com/tbud/bud/tasks/dist"
 	_ "github.com/tbud/bud/tasks/license"
-	"os"
 )
 
 func init() {
