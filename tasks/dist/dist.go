@@ -62,7 +62,7 @@ func (d *DistTask) Execute() (err error) {
 			if goos == "windows" {
 				binName += ".exe"
 			}
-			if err = Cmd("go", "build", "-ldflags", "-w", "-o", binName, distSrcFile).WithEnv("GOOS="+goos, "GOARCH="+goarch, "CGO_ENABLED=1").Run(); err != nil {
+			if err = Cmd("go", "build", "-ldflags", "-w", "-o", binName, distSrcFile).WithEnv("GOOS="+goos, "GOARCH="+goarch, "CGO_ENABLED=0").Run(); err != nil {
 				// if err = Cmd("go", "build", "-o", binName, distSrcFile).WithEnv("GOOS="+goos, "GOARCH="+goarch, "CGO_ENABLED=0").Run(); err != nil {
 				return err
 			}
